@@ -1,3 +1,5 @@
+# A flappybird clone, for my son.
+
 import pygame
 import sys
 import random
@@ -7,24 +9,25 @@ screen_width = 1000
 screen_height = screen_width  # Flappiness!
 
 background_color = (50, 150, 250)  # Light blue
-hspeed = 5  # Speed of the bird
-obstacle_interval = 1700
+hspeed = 3  # Speed of the bird
+obstacle_interval = 1800
 score_size = 122
 gap_size = 400
 
 class Bird(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, x, y, font=None):
         super().__init__()
         self.image = pygame.Surface((100, 100))  # Bird shape
         self.image.fill((255, 255, 255))  # Change bird color to white
         self.rect = self.image.get_rect(center=(screen_width // 2, screen_height // 2))  # Center bird
-        self.velocity = -10  # Initial velocity
+        self.velocity = -5  # Initial velocity
+        self.font = font
 
     def move_upwards(self):
-        self.velocity = -10  # Adjust this value to control the movement speed
+        self.velocity = -5  # Adjust this value to control the movement speed
 
     def update(self):
-        self.velocity += 0.4  # Simulate gravity
+        self.velocity += 0.2  # Simulate gravity
         self.rect.y += self.velocity  # Update position based on velocity
         
         # Prevent the bird from going off-screen
@@ -34,9 +37,20 @@ class Bird(pygame.sprite.Sprite):
             self.rect.bottom = screen_height
             self.velocity = -self.velocity * 0.75  # Reset velocity when hitting the ground
 
+    def draw(self, screen):
+        # Original drawing code
+        screen.blit(self.image, self.rect)
+
+        # New debug info drawing code
+        if self.font:
+            debug_info = f"Pos: ({self.rect.x}, {self.rect.y}), Vel: {self.velocity:.1f}"
+            debug_surf = self.font.render(debug_info, True, (255, 255, 255))  # White text
+            screen.blit(debug_surf, (self.rect.x, self.rect.y - 20))  # Position above the bird
+
 class Obstacle(pygame.sprite.Sprite):
-    def __init__(self, x, gap_size, height_range=(50, 450), width=100):
+    def __init__(self, x, gap_size, height_range=(100, 500), width=100, font=None):
         super().__init__()
+        self.font = font
         self.gap_size = gap_size
         self.top_height = random.randint(*height_range)
         self.bottom_height = screen_height - self.top_height - gap_size
@@ -64,6 +78,12 @@ class Obstacle(pygame.sprite.Sprite):
         screen.blit(self.top_image, self.top_rect)
         screen.blit(self.bottom_image, self.bottom_rect)
 
+        # Render and draw debug info if a font is available
+        if self.font:
+            debug_info = f"Top: {self.top_height}, Bottom: {self.bottom_height}, Gap: {self.gap_size}"
+            debug_surf = self.font.render(debug_info, True, (255, 255, 255))  # White text
+            screen.blit(debug_surf, (self.top_rect.x, self.top_rect.bottom + 5))  # Adjust position as needed
+ 
 def game_over_screen(screen):
     font = pygame.font.Font(None, 74)
     text = font.render("Game Over", True, (255, 0, 0))
@@ -76,8 +96,11 @@ def main():
     screen = pygame.display.set_mode((screen_width, screen_height))
     pygame.display.set_caption("FlappyMax")
 
+    debug_font = pygame.font.Font(None, 24) 
+
     bird_group = pygame.sprite.GroupSingle()
-    bird = Bird()
+    bird = Bird(screen_width // 2, screen_height // 2, font=debug_font)
+
     bird_group.add(bird)
 
     obstacles = pygame.sprite.Group()
@@ -98,7 +121,7 @@ def main():
                 if event.key == pygame.K_SPACE:
                     bird.move_upwards()
             elif event.type == obstacle_timer:
-                obstacles.add(Obstacle(screen_width, gap_size))
+                obstacles.add(Obstacle(screen_width, gap_size, font=debug_font)) 
 
         collision = False
         for obstacle in obstacles:
@@ -111,6 +134,9 @@ def main():
                 collision = True
                 break
 
+            if obstacle.top_rect.right < 0 or obstacle.bottom_rect.right < 0 :
+                obstacles.remove(obstacle)
+
         if collision:
             game_over_screen(screen)
             bird_group.empty()
@@ -120,7 +146,7 @@ def main():
             pygame.time.set_timer(obstacle_timer, 0)  # Stop the timer
             pygame.time.set_timer(obstacle_timer, obstacle_interval)  # Restart the timer with the original interval
 
-            bird = Bird()
+            bird = Bird(screen_width // 2, screen_height // 2, font=debug_font)
             bird_group.add(bird)
             score = 0  # Reset score
                 
@@ -129,7 +155,9 @@ def main():
             obstacle.draw(screen)
         
         bird_group.update()
-        bird_group.draw(screen)
+        # bird_group.draw(screen)
+        for bird in bird_group:
+            bird.draw(screen)  # This calls your custom draw method that includes debug info
         
         # Display the score
         score_text = font.render(str(score), True, (255, 255, 255))
@@ -142,4 +170,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+ 
  
