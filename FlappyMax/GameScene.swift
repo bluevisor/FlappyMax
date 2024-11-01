@@ -5,69 +5,268 @@
 //  Created by John Zheng on 10/31/24.
 //
 
-//
-//  GameScene.swift
-//  FlappyMax
-//
-//  Created by John Zheng on 10/31/24.
-//
-
 import SpriteKit
 import GameplayKit
+import AVFoundation
 
-class GameScene: SKScene {
-    // Game Configuration Constants
-    private let gravity: CGFloat = -5.0
-    private let backgroundColorValue = SKColor(red: 50/255, green: 150/255, blue: 250/255, alpha: 1.0)
-    private let backgroundSpeed: CGFloat = 5.0
-    private let floorSpeed: CGFloat = 8.0
-    private let poleSpeed: CGFloat = 8.0
-    private let heroScale: CGFloat = 2.0
-    private let floorScale: CGFloat = 8.0
-    private let numberOfPolePairs = 2
-    private let poleScale: CGFloat = 6.0
-    private let poleSpacing: CGFloat = 800.0 // Adjust this value as needed
-    private var polePairGap: CGFloat = 250.0
-    private let coinScale: CGFloat = 0.8
-    private let burgerScale: CGFloat = 3.0
-    private let numberOfCoins = 5
-    private let numberOfBurgers = 2
-    private let flapImpulse: CGFloat = 100.0
-    private let coinAnimationSpeed: TimeInterval = 1/30
+// MARK: - General Game Configuration
+let gravity: CGFloat = -9.0
+let screenMargin: CGFloat = 100.0
+let backgroundColorValue = SKColor(red: 50/255, green: 150/255, blue: 250/255, alpha: 1.0)
+let poleSpacing: CGFloat = 900.0
 
-    // Game Nodes
-    private var background1: SKSpriteNode!
-    private var background2: SKSpriteNode!
-    private var hero: SKSpriteNode!
-    private var coinNodes: [SKSpriteNode] = []
-    private var burgerNodes: [SKSpriteNode] = []
-    private var floorNodes: [SKSpriteNode] = []
-    private var polePairs: [SKNode] = []
-    private var obstacles: [SKSpriteNode] = []
+struct PhysicsCategory {
+    static let hero: UInt32 = 0x1 << 0
+    static let pole: UInt32 = 0x1 << 1
+    static let coin: UInt32 = 0x1 << 2
+    static let burger: UInt32 = 0x1 << 3
+    static let scoreZone: UInt32 = 0x1 << 4
+    static let floor: UInt32 = 0x1 << 5
+}
+
+struct ScoreEntry: Codable {
+    var name: String
+    var mainScore: Int
+    var coins: Int
+    var burgers: Int
+    var date: Date
+}
+
+class GameScene: SKScene, SKPhysicsContactDelegate {
+    // MARK: - Labels
+    internal var mainScoreLabel: SKLabelNode!
+    internal var coinScoreLabel: SKLabelNode!
+    internal var burgerScoreLabel: SKLabelNode!
+    internal var mainScore = 0
+    internal var coinScore = 0
+    internal var burgerScore = 0
+
+    // MARK: - Background Configuration
+    internal let numberOfBackgrounds = 3
+    internal let backgroundSpeed: CGFloat = 5.0
+    internal var backgroundNodes: [SKSpriteNode] = []
+    internal var gameOver = false
+
+    let leaderboardKey = "Leaderboard"
+
+    // MARK: - Hero Configuration
+    internal let heroTextureScale: CGFloat = 2.0
+    internal let flapImpulse: CGFloat = 150.0
+    internal var hero: SKSpriteNode!
+
+    // MARK: - Floor Configuration
+    internal let floorSpeed: CGFloat = 8.0
+    internal let floorTextureScale: CGFloat = 8.0
+    internal var floorNodes: [SKSpriteNode] = []
+
+    // MARK: - Pole Configuration
+    internal let numberOfPolePairs = 4
+    internal var polePairGap: CGFloat = 300.0
+    internal let poleTextureScale: CGFloat = 6.0
+    internal let minDistanceFromPole: CGFloat = 50.0
+    internal var poleSectionLength: CGFloat = 0.0
+    internal var polePairs: [SKNode] = []
+
+    // MARK: - Collectable Configuration
+    internal let numberOfCoins = 5
+    internal let numberOfBurgers = 1
+    internal let coinAnimationSpeed: TimeInterval = 1/30
+    internal let coinTextureScale: CGFloat = 0.8
+    internal let burgerTextureScale: CGFloat = 3.0
+    internal let minRandomXPosition: CGFloat = 200.0
+    internal let maxRandomXPosition: CGFloat = 400.0
+    internal var collectableSectionLength: CGFloat = 0.0
+    internal var coinNodes: [SKSpriteNode] = []
+    internal var burgerNodes: [SKSpriteNode] = []
+
+    // MARK: - Movement Speeds
+    internal let objectSpeed: CGFloat = 8.0
+
+    // MARK: - Obstacles
+    internal var obstacles: [SKSpriteNode] = []
+
+    // MARK: - Sound Effects
+    var coinSoundEffects: [AVAudioPlayer] = []
+    var burgerSoundEffects: [AVAudioPlayer] = []
+    var gameOverSoundEffects: [AVAudioPlayer] = []
+    var flapSoundEffects: [AVAudioPlayer] = []
+    let soundEffectPoolSize = 3
 
     override func didMove(to view: SKView) {
         self.physicsWorld.gravity = CGVector(dx: 0.0, dy: gravity)
-
+        self.physicsWorld.contactDelegate = self
+        setupLabels()
         setupBackground()
         setupHero()
         setupFloor()
         setupPoles()
         setupCollectibles()
+
+        // Load and preload sound effects
+        loadSoundEffects()
+    }
+
+    private func loadSoundEffects() {
+        // Load flap sound effect into a pool
+        if let flapSoundURL = Bundle.main.url(forResource: "flap", withExtension: "caf") {
+            for _ in 0..<soundEffectPoolSize {
+                if let player = try? AVAudioPlayer(contentsOf: flapSoundURL) {
+                    player.prepareToPlay()
+                    flapSoundEffects.append(player)
+                }
+            }
+        }
+
+        if let coinSoundURL = Bundle.main.url(forResource: "coin_short", withExtension: "wav") {
+            for _ in 0..<soundEffectPoolSize {
+                if let player = try? AVAudioPlayer(contentsOf: coinSoundURL) {
+                    player.prepareToPlay()
+                    coinSoundEffects.append(player)
+                }
+            }
+        }
+        if let burgerSoundURL = Bundle.main.url(forResource: "eating", withExtension: "mp3") {
+            for _ in 0..<soundEffectPoolSize {
+                if let player = try? AVAudioPlayer(contentsOf: burgerSoundURL) {
+                    player.prepareToPlay()
+                    burgerSoundEffects.append(player)
+                }
+            }
+        }
+        if let gameOverSoundURL = Bundle.main.url(forResource: "game_over", withExtension: "mp3") {
+            for _ in 0..<soundEffectPoolSize {
+                if let player = try? AVAudioPlayer(contentsOf: gameOverSoundURL) {
+                    player.prepareToPlay()
+                    gameOverSoundEffects.append(player)
+                }
+            }
+        }
+    }
+
+    private func playSoundEffect(from pool: [AVAudioPlayer]) {
+        for player in pool {
+            if !player.isPlaying {
+                player.play()
+                break
+            }
+        }
+    }
+
+    func didBegin(_ contact: SKPhysicsContact) {
+        let contactA = contact.bodyA
+        let contactB = contact.bodyB
+        let otherBody: SKPhysicsBody
+
+        if contactA.categoryBitMask == PhysicsCategory.hero {
+            otherBody = contactB
+        } else if contactB.categoryBitMask == PhysicsCategory.hero {
+            otherBody = contactA
+        } else {
+            return
+        }
+
+        switch otherBody.categoryBitMask {
+        case PhysicsCategory.scoreZone:
+            if let scoreZoneNode = otherBody.node {
+                mainScore += 1
+                mainScoreLabel.text = "\(mainScore)"
+                scoreZoneNode.physicsBody = nil
+            }
+            
+        case PhysicsCategory.coin, PhysicsCategory.burger:
+            if let collectableNode = otherBody.node as? SKSpriteNode {
+                collect(collectableNode)
+            }
+
+        case PhysicsCategory.pole, PhysicsCategory.floor: // Game over
+            gameOver = true
+            handleGameOver()
+        
+        default:
+            break
+        }
+    }
+        
+    func handleGameOver() {
+        stopAllSoundEffects()
+        playSoundEffect(from: gameOverSoundEffects)
+        let gameOverScene = GameOverScene(size: self.size)
+        gameOverScene.scaleMode = .aspectFill
+        gameOverScene.currentScore = ScoreEntry(name: "", mainScore: mainScore, coins: coinScore, burgers: burgerScore, date: Date())
+        view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
+    }
+
+    private func stopAllSoundEffects() {
+        for player in coinSoundEffects + burgerSoundEffects +       flapSoundEffects + gameOverSoundEffects {
+            player.stop()  // Stop each player in all pools
+            player.currentTime = 0  // Reset to the beginning in case it's reused
+        }
+    }
+
+    func collect(_ collectableNode: SKSpriteNode) {
+        if coinNodes.contains(collectableNode) {
+            coinScore += 1
+            coinScoreLabel.text = "Coins: \(coinScore)"
+            coinNodes.removeAll { $0 == collectableNode }
+            playSoundEffect(from: coinSoundEffects)
+        } else if burgerNodes.contains(collectableNode) {
+            burgerScore += 1
+            burgerScoreLabel.text = "Burgers: \(burgerScore)"
+            burgerNodes.removeAll { $0 == collectableNode }
+            playSoundEffect(from: burgerSoundEffects)
+        }
+
+        obstacles.removeAll { $0 == collectableNode }
+        collectableNode.removeFromParent()
+    }
+
+    private func setupLabels() {
+        // Setup the main score label
+        mainScoreLabel = SKLabelNode(fontNamed: "Helvetica")
+        mainScoreLabel.position = CGPoint(
+            x: frame.midX,
+            y: frame.height - screenMargin * 1.5
+        )
+        mainScoreLabel.fontSize = 120
+        mainScoreLabel.fontColor = .white
+        mainScoreLabel.text = "0"
+        mainScoreLabel.zPosition = 100
+        addChild(mainScoreLabel)
+
+        // Setup the coin score label
+        coinScoreLabel = SKLabelNode(fontNamed: "Helvetica")
+        coinScoreLabel.position = CGPoint(
+            x: frame.width - screenMargin * 1.5,
+            y: frame.height - screenMargin
+        )
+        coinScoreLabel.fontSize = 42
+        coinScoreLabel.fontColor = .white
+        coinScoreLabel.text = "Coins: 0"
+        coinScoreLabel.zPosition = 100
+        addChild(coinScoreLabel)
+
+        // Setup the burger score label
+        burgerScoreLabel = SKLabelNode(fontNamed: "Helvetica")
+        burgerScoreLabel.position = CGPoint(
+            x: screenMargin * 1.5,
+            y: frame.height - screenMargin
+        )
+        burgerScoreLabel.fontSize = 42
+        burgerScoreLabel.fontColor = .white
+        burgerScoreLabel.text = "Burgers: 0"
+        burgerScoreLabel.zPosition = 100
+        addChild(burgerScoreLabel)
     }
 
     private func setupBackground() {
-        // Setting up two background nodes to create a continuous looping effect
-        background1 = SKSpriteNode(color: backgroundColorValue, size: self.size)
-        background1.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        background1.position = CGPoint(x: frame.midX, y: frame.midY)
-        background1.zPosition = -10
-        addChild(background1)
-
-        background2 = SKSpriteNode(color: backgroundColorValue, size: self.size)
-        background2.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        background2.position = CGPoint(x: background1.size.width + frame.midX, y: frame.midY)
-        background2.zPosition = -10
-        addChild(background2)
+        for i in 0..<numberOfBackgrounds {
+            let background = SKSpriteNode(color: backgroundColorValue, size: self.size)
+            background.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+            background.position = CGPoint(x: CGFloat(i) * background.size.width, y: frame.midY)
+            background.zPosition = -10
+            addChild(background)
+            backgroundNodes.append(background)
+        }
     }
 
     private func setupHero() {
@@ -76,309 +275,64 @@ class GameScene: SKScene {
         hero = SKSpriteNode(texture: heroTexture)
         hero.position = CGPoint(x: frame.midX / 2, y: frame.midY)
         hero.zPosition = 1
-        hero.size = CGSize(width: heroTexture.size().width * heroScale, height: heroTexture.size().height * heroScale)
+        hero.size = CGSize(width: heroTexture.size().width * heroTextureScale, height: heroTexture.size().height * heroTextureScale)
         hero.physicsBody = SKPhysicsBody(texture: heroTexture, size: hero.size)
         hero.physicsBody?.isDynamic = true
         hero.physicsBody?.affectedByGravity = true
+        hero.physicsBody?.allowsRotation = false
+        hero.physicsBody?.categoryBitMask = PhysicsCategory.hero
+        hero.physicsBody?.contactTestBitMask = PhysicsCategory.pole | PhysicsCategory.coin | PhysicsCategory.burger
+        hero.physicsBody?.collisionBitMask = PhysicsCategory.pole | PhysicsCategory.floor
+
         addChild(hero)
     }
 
     private func setupFloor() {
         let floorTexture = SKTexture(imageNamed: "floor")
         floorTexture.filteringMode = .nearest
-        let numberOfFloors = Int(ceil(frame.size.width / (floorTexture.size().width * floorScale))) + 1
+        let floorWidth = floorTexture.size().width * floorTextureScale
+        let numberOfFloors = Int(ceil(frame.size.width / floorWidth)) + 1
         for i in 0..<numberOfFloors {
             let floor = SKSpriteNode(texture: floorTexture)
-            floor.size = CGSize(width: floorTexture.size().width * floorScale, height: floorTexture.size().height * floorScale)
+            floor.size = CGSize(width: floorWidth, height: floorTexture.size().height * floorTextureScale)
             floor.anchorPoint = CGPoint(x: 0, y: 0)
-            floor.position = CGPoint(x: CGFloat(i) * floor.size.width, y: frame.minY)
-            floor.zPosition = 0
-            floor.physicsBody = SKPhysicsBody(rectangleOf: floor.size, center: CGPoint(x: floor.size.width / 2, y: floor.size.height / 2))
+            floor.position = CGPoint(x: CGFloat(i) * floorWidth, y: frame.minY)
+            floor.zPosition = 10
+            floor.physicsBody = SKPhysicsBody(rectangleOf: floor.size, center: CGPoint(x: floorWidth / 2, y: floor.size.height / 2))
             floor.physicsBody?.isDynamic = false
+            floor.physicsBody?.categoryBitMask = PhysicsCategory.floor
+            floor.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+            floor.physicsBody?.collisionBitMask = PhysicsCategory.hero
+
             addChild(floor)
             floorNodes.append(floor)
             obstacles.append(floor)
         }
     }
 
-    private func setupPoles() {
-        for i in 0..<numberOfPolePairs {
-            let polePair = SKNode()
-
-            let topPoleTexture = SKTexture(imageNamed: "pole")
-            topPoleTexture.filteringMode = .nearest
-
-            let bottomPoleTexture = SKTexture(imageNamed: "pole")
-            bottomPoleTexture.filteringMode = .nearest
-
-            // Set up poles to mirror each other
-            let scaledSize = CGSize(
-                width: topPoleTexture.size().width * poleScale,
-                height: topPoleTexture.size().height * poleScale
-            )
-
-            let topPole = SKSpriteNode(texture: topPoleTexture)
-            topPole.size = scaledSize
-            topPole.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            topPole.zRotation = CGFloat.pi
-
-            let bottomPole = SKSpriteNode(texture: bottomPoleTexture)
-            bottomPole.size = scaledSize
-            bottomPole.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-
-            let maxY = frame.height / 2 + polePairGap
-            let minY = frame.height / 2 - polePairGap
-            let yPosition = CGFloat.random(in: minY...maxY)
-
-            topPole.position = CGPoint(x: 0, y: yPosition + polePairGap / 2 + scaledSize.height / 2)
-            bottomPole.position = CGPoint(x: 0, y: yPosition - polePairGap / 2 - scaledSize.height / 2)
-
-            topPole.zPosition = 0
-            bottomPole.zPosition = 0
-
-            // Create physics bodies with the scaled size
-            topPole.physicsBody = SKPhysicsBody(rectangleOf: scaledSize)
-            topPole.physicsBody?.isDynamic = false
-            topPole.physicsBody?.affectedByGravity = false
-
-            bottomPole.physicsBody = SKPhysicsBody(rectangleOf: scaledSize)
-            bottomPole.physicsBody?.isDynamic = false
-            bottomPole.physicsBody?.affectedByGravity = false
-
-            polePair.addChild(topPole)
-            polePair.addChild(bottomPole)
-
-            // Position each pole pair with equal spacing
-            let xPosition = frame.maxX + CGFloat(i) * poleSpacing
-            polePair.position = CGPoint(x: xPosition, y: 0)
-            polePair.zPosition = 0
-
-            addChild(polePair)
-            polePairs.append(polePair)
-
-            obstacles.append(topPole)
-            obstacles.append(bottomPole)
-        }
-    }
-
-    private func setupCollectibles() {
-        for _ in 1...numberOfCoins {
-            let coinTexture = SKTexture(imageNamed: "coin_01.png")
-            coinTexture.filteringMode = .nearest
-            let coin = SKSpriteNode(texture: coinTexture)
-            coin.size = CGSize(width: coinTexture.size().width * coinScale, height: coinTexture.size().height * coinScale)
-
-            var positionFound = false
-            var coinPosition: CGPoint = .zero
-            let minY = floorNodes.first!.size.height + coin.size.height / 2
-            let maxY = frame.size.height - coin.size.height / 2
-            let coinYRange = minY...maxY
-
-            repeat {
-                coinPosition = CGPoint(x: frame.maxX + CGFloat.random(in: 200...400), y: CGFloat.random(in: coinYRange))
-                coin.position = coinPosition
-                var overlap = false
-                for obstacle in obstacles {
-                    if coin.frame.intersects(obstacle.frame) {
-                        overlap = true
-                        break
-                    }
-                }
-                if !overlap {
-                    positionFound = true
-                }
-            } while !positionFound
-
-            coin.zPosition = 0
-            coin.physicsBody = SKPhysicsBody(circleOfRadius: coin.size.width / 2 - 5)
-            coin.physicsBody?.isDynamic = false
-
-            // Create the coin animation using the atlas frames
-            var coinFrames: [SKTexture] = []
-            for i in 1...15 {
-                let frameTexture = SKTexture(imageNamed: "coin_\(String(format: "%02d", i)).png")
-                frameTexture.filteringMode = .nearest
-                coinFrames.append(frameTexture)
-            }
-            let coinAnimation = SKAction.repeatForever(SKAction.animate(with: coinFrames, timePerFrame: coinAnimationSpeed))
-            coin.run(coinAnimation)
-
-            addChild(coin)
-            coinNodes.append(coin)
-            obstacles.append(coin)
-        }
-
-        for _ in 1...numberOfBurgers {
-            let burgerTexture = SKTexture(imageNamed: "burger")
-            burgerTexture.filteringMode = .nearest
-            let burger = SKSpriteNode(texture: burgerTexture)
-            burger.size = CGSize(width: burgerTexture.size().width * burgerScale, height: burgerTexture.size().height * burgerScale)
-
-            var positionFound = false
-            var burgerPosition: CGPoint = .zero
-            let minY = floorNodes.first!.size.height + burger.size.height / 2
-            let maxY = frame.size.height - burger.size.height / 2
-            let burgerYRange = minY...maxY
-
-            repeat {
-                burgerPosition = CGPoint(x: frame.maxX + CGFloat.random(in: 200...600), y: CGFloat.random(in: burgerYRange))
-                burger.position = burgerPosition
-                var overlap = false
-                for obstacle in obstacles {
-                    if burger.frame.intersects(obstacle.frame) {
-                        overlap = true
-                        break
-                    }
-                }
-                if !overlap {
-                    positionFound = true
-                }
-            } while !positionFound
-
-            burger.zPosition = 0
-            burger.physicsBody = SKPhysicsBody(circleOfRadius: burger.size.width / 2)
-            burger.physicsBody?.isDynamic = false
-
-            addChild(burger)
-            burgerNodes.append(burger)
-            obstacles.append(burger)
-        }
-    }
-
-    private func movePoles(speed: CGFloat) {
-        for polePair in polePairs {
-            polePair.position = CGPoint(x: polePair.position.x - speed, y: polePair.position.y)
-
-            // Reset pole position if it moves off-screen
-            if polePair.position.x < -polePair.calculateAccumulatedFrame().width {
-                // Remove old obstacles
-                for node in polePair.children {
-                    if let spriteNode = node as? SKSpriteNode {
-                        if let index = obstacles.firstIndex(of: spriteNode) {
-                            obstacles.remove(at: index)
-                        }
-                    }
-                }
-
-                // Find the maximum x-position among all pole pairs
-                let maxX = polePairs.map { $0.position.x }.max() ?? frame.maxX
-
-                // Update positions of top and bottom poles
-                let topPole = polePair.children[0] as! SKSpriteNode
-                let bottomPole = polePair.children[1] as! SKSpriteNode
-
-                let maxY = frame.height / 2 + polePairGap
-                let minY = frame.height / 2 - polePairGap
-                let yPosition = CGFloat.random(in: minY...maxY)
-
-                topPole.position = CGPoint(x: 0, y: yPosition + polePairGap / 2 + topPole.size.height / 2)
-                bottomPole.position = CGPoint(x: 0, y: yPosition - polePairGap / 2 - bottomPole.size.height / 2)
-
-                // Set new x-position with spacing
-                polePair.position.x = maxX + poleSpacing
-
-                // Add back to obstacles
-                obstacles.append(topPole)
-                obstacles.append(bottomPole)
-            }
-        }
-
-        // Move collectibles at the same speed as poles
-        moveCollectibles(speed: speed)
-    }
-
-    private func moveCollectibles(speed: CGFloat) {
-        for coin in coinNodes {
-            coin.position = CGPoint(x: coin.position.x - speed, y: coin.position.y)
-
-            // Reset coin position if it moves off-screen
-            if coin.position.x < -coin.size.width {
-                if let index = obstacles.firstIndex(of: coin) {
-                    obstacles.remove(at: index)
-                }
-
-                var positionFound = false
-                var coinPosition: CGPoint = .zero
-                let minY = floorNodes.first!.size.height + coin.size.height / 2
-                let maxY = frame.size.height - coin.size.height / 2
-                let coinYRange = minY...maxY
-
-                repeat {
-                    coinPosition = CGPoint(x: frame.maxX + CGFloat.random(in: 200...400), y: CGFloat.random(in: coinYRange))
-                    coin.position = coinPosition
-                    var overlap = false
-                    for obstacle in obstacles {
-                        if coin.frame.intersects(obstacle.frame) {
-                            overlap = true
-                            break
-                        }
-                    }
-                    if !overlap {
-                        positionFound = true
-                    }
-                } while !positionFound
-
-                obstacles.append(coin)
-            }
-        }
-
-        for burger in burgerNodes {
-            burger.position = CGPoint(x: burger.position.x - speed, y: burger.position.y)
-
-            // Reset burger position if it moves off-screen
-            if burger.position.x < -burger.size.width {
-                if let index = obstacles.firstIndex(of: burger) {
-                    obstacles.remove(at: index)
-                }
-
-                var positionFound = false
-                var burgerPosition: CGPoint = .zero
-                let minY = floorNodes.first!.size.height + burger.size.height / 2
-                let maxY = frame.size.height - burger.size.height / 2
-                let burgerYRange = minY...maxY
-
-                repeat {
-                    burgerPosition = CGPoint(x: frame.maxX + CGFloat.random(in: 200...600), y: CGFloat.random(in: burgerYRange))
-                    burger.position = burgerPosition
-                    var overlap = false
-                    for obstacle in obstacles {
-                        if burger.frame.intersects(obstacle.frame) {
-                            overlap = true
-                            break
-                        }
-                    }
-                    if !overlap {
-                        positionFound = true
-                    }
-                } while !positionFound
-
-                obstacles.append(burger)
-            }
-        }
-    }
-
     override func update(_ currentTime: TimeInterval) {
-        // Move background layers
-        moveLayer(layer: background1, speed: backgroundSpeed)
-        moveLayer(layer: background2, speed: backgroundSpeed)
-        // Move floor
+        moveBackgrounds(speed: backgroundSpeed)
         moveFloor(speed: floorSpeed)
-        // Move poles
-        movePoles(speed: poleSpeed)
+        movePoles(speed: objectSpeed)
+        moveCollectibles(speed: objectSpeed)
     }
 
-    private func moveLayer(layer: SKSpriteNode, speed: CGFloat) {
-        layer.position = CGPoint(x: layer.position.x - speed, y: layer.position.y)
+    private func moveBackgrounds(speed: CGFloat) {
+        guard !gameOver else { return }
+        for background in backgroundNodes {
+            background.position.x -= speed
 
-        // Reset the layer position if it moves completely off-screen
-        if layer.position.x <= -layer.size.width / 2 {
-            layer.position.x += layer.size.width * 2
+            // Reset the background position if it moves completely off-screen
+            if background.position.x <= -background.size.width {
+                background.position.x += background.size.width * CGFloat(backgroundNodes.count)
+            }
         }
     }
 
     private func moveFloor(speed: CGFloat) {
+        guard !gameOver else { return }
         for floor in floorNodes {
-            floor.position = CGPoint(x: floor.position.x - speed, y: floor.position.y)
+            floor.position.x -= speed
 
             // Reset floor position if it moves off-screen
             if floor.position.x <= -floor.size.width {
@@ -387,8 +341,75 @@ class GameScene: SKScene {
         }
     }
 
+    func createCurvePath(between firstPolePair: SKNode, and secondPolePair: SKNode) -> CGPath {
+        let path = CGMutablePath()
+
+        // Define starting and ending points for the curve
+        let startPoint = CGPoint(x: firstPolePair.position.x, y: firstPolePair.position.y)
+        let endPoint = CGPoint(x: secondPolePair.position.x, y: secondPolePair.position.y)
+
+        // Calculate control points for the Bezier curve
+        let controlPoint1 = CGPoint(x: (startPoint.x + endPoint.x) / 2, y: startPoint.y + 200)
+        let controlPoint2 = CGPoint(x: (startPoint.x + endPoint.x) / 2, y: endPoint.y - 200)
+
+        // Create the Bezier curve path
+        path.move(to: startPoint)
+        path.addCurve(to: endPoint, control1: controlPoint1, control2: controlPoint2)
+
+        return path
+    }
+
+    func placeCollectableOnCurve(collectable: SKSpriteNode, curvePath: CGPath) {
+        // Randomly select a point along the curve path
+        let randomT = CGFloat.random(in: 0.1...0.9)
+        let position = positionOnPath(path: curvePath, at: randomT)
+        collectable.position = position
+    }
+
+    // Helper function to calculate a position on the path
+    func positionOnPath(path: CGPath, at t: CGFloat) -> CGPoint {
+        // Extract path points and calculate position based on t (0.0 to 1.0)
+        let pathInfo = path.copy(dashingWithPhase: 0, lengths: [path.boundingBox.width])
+        let pathLength = pathInfo.boundingBox.width
+        let point = CGPoint(x: path.boundingBox.origin.x + pathLength * t, y: path.boundingBox.origin.y)
+        return point
+    }
+
+    // Function to retrieve the top 10 scores from UserDefaults
+    func getLeaderboard() -> [ScoreEntry] {
+        if let data = UserDefaults.standard.data(forKey: leaderboardKey) {
+            let decoder = JSONDecoder()
+            return (try? decoder.decode([ScoreEntry].self, from: data)) ?? []
+        }
+        return []
+    }
+
+    // Function to save the top 10 scores to UserDefaults
+    func saveLeaderboard(_ leaderboard: [ScoreEntry]) {
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(leaderboard) {
+            UserDefaults.standard.set(data, forKey: leaderboardKey)
+        }
+    }
+
+    // Function to add a new score if it's in the top 10
+    func updateLeaderboard(with newEntry: ScoreEntry) {
+        var leaderboard = getLeaderboard()
+        leaderboard.append(newEntry)
+
+        leaderboard.sort { $0.mainScore > $1.mainScore }
+
+        if leaderboard.count > 10 {
+            leaderboard.removeLast() // Keep only top 10
+        }
+        saveLeaderboard(leaderboard)
+    }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         hero.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
         hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: flapImpulse))
+        
+        // Play flap sound effect from the pool
+        playSoundEffect(from: flapSoundEffects)
     }
 }

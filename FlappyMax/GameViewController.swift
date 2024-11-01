@@ -18,7 +18,7 @@ class GameViewController: UIViewController {
         // including entities and graphs.
         if let view = self.view as! SKView? {
             // Load the SKScene from 'GameScene.sks'
-            let scene = GameScene(size: view.bounds.size)
+            let scene = MainMenuScene(size: view.bounds.size)
             scene.scaleMode = .aspectFill
             
             // Present the scene
