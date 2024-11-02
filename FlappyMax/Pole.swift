@@ -25,6 +25,7 @@ extension GameScene {
             topPole.size = scaledSize
             topPole.anchorPoint = CGPoint(x: 0.5, y: 0.5)
             topPole.zRotation = CGFloat.pi
+            topPole.xScale = -1.0
 
             let bottomPole = SKSpriteNode(texture: poleTexture)
             bottomPole.size = scaledSize
