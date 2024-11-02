@@ -32,11 +32,7 @@ extension GameScene {
             }
 
             // Position a burger along this curve
-            let burger = createCollectable(
-                textureName: "burger",
-                textureScale: burgerTextureScale,
-                physicsCategory: PhysicsCategory.burger
-            )
+            let burger = BurgerCollectable(staminaReplenishment: 25.0)
             UtilityFunctions.placeCollectableOnCurve(collectable: burger, curvePath: curvePath, deviation: 20.0)
             if !isOverlapping(collectable: burger) {
                 burgerNodes.append(burger)
@@ -167,5 +163,28 @@ extension GameScene {
         debugNode.strokeColor = color
         debugNode.zPosition = 1001 // Place above the curve line for visibility
         addChild(debugNode)
+    }
+}
+
+class BurgerCollectable: SKSpriteNode {
+    let staminaReplenishment: CGFloat
+
+    init(staminaReplenishment: CGFloat = 25.0) {
+        self.staminaReplenishment = staminaReplenishment
+        let texture = SKTexture(imageNamed: "burger")
+        super.init(texture: texture, color: .clear, size: CGSize(width: 40, height: 40))
+        self.setupPhysics()
+    }
+
+    private func setupPhysics() {
+        self.physicsBody = SKPhysicsBody(circleOfRadius: size.width / 2)
+        self.physicsBody?.isDynamic = false
+        self.physicsBody?.categoryBitMask = PhysicsCategory.burger
+        self.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+        self.physicsBody?.collisionBitMask = 0
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }

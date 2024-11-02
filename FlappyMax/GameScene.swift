@@ -53,6 +53,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal let heroTextureScale: CGFloat = 2.0
     internal let flapImpulse: CGFloat = 150.0
     internal var hero: SKSpriteNode!
+    internal var stamina: CGFloat = 100.0
+    internal let staminaDepletion: CGFloat = 1.0
+    internal let staminaReplenishment: CGFloat = 25.0
 
     // MARK: - Floor Configuration
     internal let floorSpeed: CGFloat = 8.0
@@ -68,8 +71,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal var polePairs: [SKNode] = []
 
     // MARK: - Collectable Configuration
-    internal let numberOfCoins = 6
-    internal let numberOfBurgers = 0.5
+    internal let numberOfCoins = 10
+    internal let numberOfBurgers = 1
     internal let coinAnimationSpeed: TimeInterval = 1/30
     internal let coinTextureScale: CGFloat = 0.8
     internal let burgerTextureScale: CGFloat = 3.0
@@ -78,6 +81,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal var collectableSectionLength: CGFloat = 0.0
     internal var coinNodes: [SKSpriteNode] = []
     internal var burgerNodes: [SKSpriteNode] = []
+    internal var staminaBar: SKSpriteNode!
+    internal let maxStamina: CGFloat = 100.0
+    internal var currentStamina: CGFloat = 100.0
+    internal let staminaDepletionRate: CGFloat = 0.01
+    internal let staminaBarWidth: CGFloat = 200.0
+    internal let staminaBarHeight: CGFloat = 20.0
 
     // MARK: - Movement Speeds
     internal let objectSpeed: CGFloat = 8.0
@@ -97,6 +106,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.physicsWorld.contactDelegate = self
         setupLabels()
         setupBackground()
+        setupStaminaBar()
         setupHero()
         setupFloor()
         setupPoles()
@@ -166,24 +176,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
 
         switch otherBody.categoryBitMask {
-        case PhysicsCategory.scoreZone:
-            if let scoreZoneNode = otherBody.node {
-                mainScore += 1
-                mainScoreLabel.text = "\(mainScore)"
-                scoreZoneNode.physicsBody = nil
-            }
-            
-        case PhysicsCategory.coin, PhysicsCategory.burger:
-            if let collectableNode = otherBody.node as? SKSpriteNode {
-                collect(collectableNode)
-            }
+            case PhysicsCategory.scoreZone:
+                if let scoreZoneNode = otherBody.node {
+                    mainScore += 1
+                    mainScoreLabel.text = "\(mainScore)"
+                    scoreZoneNode.physicsBody = nil
+                }
+            case PhysicsCategory.coin:
+                if let collectableNode = otherBody.node as? SKSpriteNode {
+                    collect(collectableNode)
+                }
 
-        case PhysicsCategory.pole, PhysicsCategory.floor: // Game over
-            gameOver = true
-            handleGameOver()
-        
-        default:
-            break
+            case PhysicsCategory.burger:
+                currentStamina = min(currentStamina + staminaReplenishment, maxStamina)
+                updateStaminaBar()
+
+            case PhysicsCategory.pole, PhysicsCategory.floor: // Game over
+                gameOver = true
+                handleGameOver()
+
+            default:
+                break
         }
     }
         
@@ -210,8 +223,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             coinNodes.removeAll { $0 == collectableNode }
             playSoundEffect(from: coinSoundEffects)
         } else if burgerNodes.contains(collectableNode) {
-            burgerScore += 1
-            burgerScoreLabel.text = "Burgers: \(burgerScore)"
+            stamina = min(stamina + staminaReplenishment, 100.0)
             burgerNodes.removeAll { $0 == collectableNode }
             playSoundEffect(from: burgerSoundEffects)
         }
@@ -236,8 +248,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Setup the coin score label
         coinScoreLabel = SKLabelNode(fontNamed: "Helvetica")
         coinScoreLabel.position = CGPoint(
-            x: frame.width - screenMargin * 1.5,
-            y: frame.height - screenMargin
+            x: frame.width - screenMargin * 1.0,
+            y: frame.height - screenMargin * 0.7
         )
         coinScoreLabel.fontSize = 32
         coinScoreLabel.fontColor = .white
@@ -245,17 +257,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         coinScoreLabel.zPosition = 100
         addChild(coinScoreLabel)
 
-        // Setup the burger score label
-        burgerScoreLabel = SKLabelNode(fontNamed: "Helvetica")
-        burgerScoreLabel.position = CGPoint(
-            x: screenMargin * 1.5,
-            y: frame.height - screenMargin
+        // // Setup the burger score label
+        // burgerScoreLabel = SKLabelNode(fontNamed: "Helvetica")
+        // burgerScoreLabel.position = CGPoint(
+        //     x: screenMargin * 1.5,
+        //     y: frame.height - screenMargin
+        // )
+        // burgerScoreLabel.fontSize = 32
+        // burgerScoreLabel.fontColor = .white
+        // burgerScoreLabel.text = "Burgers: 0"
+        // burgerScoreLabel.zPosition = 100
+        // addChild(burgerScoreLabel)
+    }
+
+    func setupStaminaBar() {
+        let barBackground = SKSpriteNode(color: .gray, size: CGSize(width: staminaBarWidth, height: staminaBarHeight))
+        barBackground.position = CGPoint(
+            x: frame.minX + staminaBarWidth / 2 + 30,
+            y: frame.height - screenMargin * 0.5
         )
-        burgerScoreLabel.fontSize = 32
-        burgerScoreLabel.fontColor = .white
-        burgerScoreLabel.text = "Burgers: 0"
-        burgerScoreLabel.zPosition = 100
-        addChild(burgerScoreLabel)
+        barBackground.zPosition = 100
+        addChild(barBackground)
+        
+        staminaBar = SKSpriteNode(color: .green, size: CGSize(width: staminaBarWidth, height: staminaBarHeight))
+        staminaBar.anchorPoint = CGPoint(x: 0, y: 0.5)
+        staminaBar.position = CGPoint(
+            x: frame.minX + 30,  // Align left side with barBackground
+            y: frame.height - screenMargin * 0.5
+        )
+        staminaBar.zPosition = 101
+        addChild(staminaBar)
+    }
+
+    private func updateStaminaBar() {
+        let staminaRatio = max(0, currentStamina / maxStamina)
+        staminaBar.size.width = staminaBarWidth * staminaRatio
+        staminaBar.color = staminaRatio > 0.2 ? .green : .yellow
     }
 
     private func setupBackground() {
@@ -315,6 +352,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         moveFloor(speed: floorSpeed)
         movePoles(speed: objectSpeed)
         moveCollectibles(speed: objectSpeed)
+
+        if currentStamina > 0 && !gameOver {
+            currentStamina -= staminaDepletionRate
+            if currentStamina < 0 {
+                currentStamina = 0
+            }
+        }
+
+        updateStaminaBar()
     }
 
     private func moveBackgrounds(speed: CGFloat) {
@@ -409,10 +455,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        hero.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
-        hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: flapImpulse))
-        
-        // Play flap sound effect from the pool
-        playSoundEffect(from: flapSoundEffects)
+        if currentStamina > 0 {
+            hero.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
+            hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: flapImpulse))
+            currentStamina = max(currentStamina - staminaDepletionRate, 0)
+            updateStaminaBar()
+
+            // Play flap sound effect from the pool
+            playSoundEffect(from: flapSoundEffects)
+        }
     }
 }
