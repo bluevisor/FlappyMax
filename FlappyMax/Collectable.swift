@@ -25,19 +25,23 @@ extension GameScene {
                 animationPrefix: "coin_",
                 animationSpeed: coinAnimationSpeed
             )
-            UtilityFunctions.placeCollectableOnCurve(collectable: coin, curvePath: curvePath)
-            coinNodes.append(coin)
-            obstacles.append(coin)
+            UtilityFunctions.placeCollectableOnCurve(collectable: coin, curvePath: curvePath, deviation: 20.0)
+            if !isOverlapping(collectable: coin) {
+                coinNodes.append(coin)
+                obstacles.append(coin)
+            }
 
-            // Position a burger along this curve (optional, only if you want both types)
+            // Position a burger along this curve
             let burger = createCollectable(
                 textureName: "burger",
                 textureScale: burgerTextureScale,
                 physicsCategory: PhysicsCategory.burger
             )
-            UtilityFunctions.placeCollectableOnCurve(collectable: burger, curvePath: curvePath)
-            burgerNodes.append(burger)
-            obstacles.append(burger)
+            UtilityFunctions.placeCollectableOnCurve(collectable: burger, curvePath: curvePath, deviation: 20.0)
+            if !isOverlapping(collectable: burger) {
+                burgerNodes.append(burger)
+                obstacles.append(burger)
+            }
         }
     }
 
@@ -134,12 +138,10 @@ extension GameScene {
                 }
             }
 
-            if !overlap {
-                for existingCollectable in coinNodes + burgerNodes {
-                    if collectable != existingCollectable && collectable.frame.intersects(existingCollectable.frame) {
-                        overlap = true
-                        break
-                    }
+            for existingCollectable in coinNodes + burgerNodes {
+                if collectable != existingCollectable && collectable.frame.intersects(existingCollectable.frame) {
+                    overlap = true
+                    break
                 }
             }
 
@@ -147,5 +149,23 @@ extension GameScene {
                 positionFound = true
             }
         } while !positionFound
+    }
+
+    func isOverlapping(collectable: SKSpriteNode) -> Bool {
+        for existingCollectable in coinNodes + burgerNodes {
+            if collectable.frame.intersects(existingCollectable.frame) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private func addDebugPoint(at position: CGPoint, color: UIColor) {
+        let debugNode = SKShapeNode(circleOfRadius: 5)
+        debugNode.position = position
+        debugNode.fillColor = color
+        debugNode.strokeColor = color
+        debugNode.zPosition = 1001 // Place above the curve line for visibility
+        addChild(debugNode)
     }
 }

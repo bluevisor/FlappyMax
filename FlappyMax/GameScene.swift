@@ -68,8 +68,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal var polePairs: [SKNode] = []
 
     // MARK: - Collectable Configuration
-    internal let numberOfCoins = 5
-    internal let numberOfBurgers = 1
+    internal let numberOfCoins = 6
+    internal let numberOfBurgers = 0.5
     internal let coinAnimationSpeed: TimeInterval = 1/30
     internal let coinTextureScale: CGFloat = 0.8
     internal let burgerTextureScale: CGFloat = 3.0
@@ -117,7 +117,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
 
-        if let coinSoundURL = Bundle.main.url(forResource: "coin_short", withExtension: "wav") {
+        if let coinSoundURL = Bundle.main.url(forResource: "coin", withExtension: "mp3") {
             for _ in 0..<soundEffectPoolSize {
                 if let player = try? AVAudioPlayer(contentsOf: coinSoundURL) {
                     player.prepareToPlay()
@@ -225,9 +225,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         mainScoreLabel = SKLabelNode(fontNamed: "Helvetica")
         mainScoreLabel.position = CGPoint(
             x: frame.midX,
-            y: frame.height - screenMargin * 1.5
+            y: frame.height - screenMargin * 1.2
         )
-        mainScoreLabel.fontSize = 120
+        mainScoreLabel.fontSize = 100
         mainScoreLabel.fontColor = .white
         mainScoreLabel.text = "0"
         mainScoreLabel.zPosition = 100
@@ -239,7 +239,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             x: frame.width - screenMargin * 1.5,
             y: frame.height - screenMargin
         )
-        coinScoreLabel.fontSize = 42
+        coinScoreLabel.fontSize = 32
         coinScoreLabel.fontColor = .white
         coinScoreLabel.text = "Coins: 0"
         coinScoreLabel.zPosition = 100
@@ -251,7 +251,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             x: screenMargin * 1.5,
             y: frame.height - screenMargin
         )
-        burgerScoreLabel.fontSize = 42
+        burgerScoreLabel.fontSize = 32
         burgerScoreLabel.fontColor = .white
         burgerScoreLabel.text = "Burgers: 0"
         burgerScoreLabel.zPosition = 100
@@ -346,7 +346,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         // Define starting and ending points for the curve
         let startPoint = CGPoint(x: firstPolePair.position.x, y: firstPolePair.position.y)
+        print("startPoint: \(startPoint)", firstPolePair.position)
         let endPoint = CGPoint(x: secondPolePair.position.x, y: secondPolePair.position.y)
+        print("endPoint: \(endPoint)", secondPolePair.position)
 
         // Calculate control points for the Bezier curve
         let controlPoint1 = CGPoint(x: (startPoint.x + endPoint.x) / 2, y: startPoint.y + 200)
@@ -355,6 +357,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Create the Bezier curve path
         path.move(to: startPoint)
         path.addCurve(to: endPoint, control1: controlPoint1, control2: controlPoint2)
+        print("Path bounding box: \(path.boundingBox)")
 
         return path
     }
