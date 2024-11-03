@@ -16,9 +16,17 @@ class GameOverScene: SKScene {
         let background = BackgroundManager.shared.createBackground(size: self.size)
         addChild(background)
         
+        let ifIphone = UIDevice.current.userInterfaceIdiom == .phone
+        let titleScale: CGFloat = ifIphone ? 0.45 : 0.65
+        let gameOverLabelFontSize: CGFloat = ifIphone ? 60 : 100
+        let gameOverLabelPositionOffset: CGFloat = ifIphone ? 110 : 260
+        let buttonFontSize: CGFloat = ifIphone ? 30 : 40
+        let retryButtonPositionOffset: CGFloat = ifIphone ? -110 : -280
+        let returnToMenuButtonPositionOffset: CGFloat = ifIphone ? -150 : -350
+
         let title = SKSpriteNode(texture: SKTexture(imageNamed: "flappymax_title_white"))
         title.position = CGPoint(x: frame.midX, y: frame.midY)
-        title.setScale(CGFloat(0.65))
+        title.setScale(titleScale)
         title.alpha = 0.05
         title.zPosition = -1
         addChild(title)
@@ -26,8 +34,8 @@ class GameOverScene: SKScene {
         // Game over label
         let gameOverLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
         gameOverLabel.text = "Game Over"
-        gameOverLabel.fontSize = 100
-        gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY + 260)
+        gameOverLabel.fontSize = gameOverLabelFontSize
+        gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY + gameOverLabelPositionOffset)
         addChild(gameOverLabel)
         
         displayLeaderboard()
@@ -43,16 +51,16 @@ class GameOverScene: SKScene {
         let returnToMenuButton = SKLabelNode(fontNamed: "Helvetica-Bold")
         returnToMenuButton.text = "Return to Menu"
         returnToMenuButton.name = "ReturnToMenuButton"
-        returnToMenuButton.fontSize = 40
-        returnToMenuButton.position = CGPoint(x: frame.midX, y: frame.midY - 350)
+        returnToMenuButton.fontSize = buttonFontSize
+        returnToMenuButton.position = CGPoint(x: frame.midX, y: frame.midY + returnToMenuButtonPositionOffset)
         addChild(returnToMenuButton)
 
         // Retry button
         let retryButton = SKLabelNode(fontNamed: "Helvetica-Bold")
         retryButton.text = "Retry"
         retryButton.name = "RetryButton"
-        retryButton.fontSize = 40
-        retryButton.position = CGPoint(x: frame.midX, y: frame.midY - 280)
+        retryButton.fontSize = buttonFontSize
+        retryButton.position = CGPoint(x: frame.midX, y: frame.midY + retryButtonPositionOffset)
         addChild(retryButton)
     }
 

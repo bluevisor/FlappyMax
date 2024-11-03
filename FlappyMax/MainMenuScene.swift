@@ -17,30 +17,40 @@ class MainMenuScene: SKScene {
         preloadAudio()
         let background = BackgroundManager.shared.createBackground(size: self.size)
         addChild(background)
-        
+
+        let ifIphone = UIDevice.current.userInterfaceIdiom == .phone
+        let titleScale: CGFloat = ifIphone ? 0.4 : 0.6
+        let titlePositionOffset: CGFloat = ifIphone ? 69 : 130
+        let titleOutScale: CGFloat = ifIphone ? 0.6 : 0.75
+        let versionLabelFontSize: CGFloat = ifIphone ? 18 : 22
+        let versionLabelPositionOffset: CGFloat = ifIphone ? -40 : -50
+        let startButtonPositionOffset: CGFloat = ifIphone ? -110 : -220
+        let startButtonFontSize: CGFloat = ifIphone ? 42 : 52
+        let copyrightLabelFontSize: CGFloat = ifIphone ? 12 : 14
+
         // First title node for the initial animation
         let titleIn = SKSpriteNode(texture: SKTexture(imageNamed: "flappymax_title_white"))
-        titleIn.position = CGPoint(x: frame.midX, y: frame.midY + 130)
+        titleIn.position = CGPoint(x: frame.midX, y: frame.midY + titlePositionOffset)
         titleIn.setScale(5.0)
         titleIn.alpha = 0.0
         addChild(titleIn)
 
         // Title in animation
         let fadeIn = SKAction.fadeIn(withDuration: 1.5)
-        let scaleDown = SKAction.scale(to: 0.6, duration: 1.5)
+        let scaleDown = SKAction.scale(to: titleScale, duration: 1.5)
         let titleInAnimation = SKAction.group([fadeIn, scaleDown])
         titleInAnimation.timingMode = .easeIn
 
         // Second title node for the exit animation
         let titleOut = SKSpriteNode(texture: SKTexture(imageNamed: "flappymax_title_white"))
         titleOut.position = titleIn.position
-        titleOut.setScale(0.6)
+        titleOut.setScale(titleScale)
         titleOut.alpha = 0.0
         addChild(titleOut)
 
         // Title out animation: fade out and scale up
         let fadeOut = SKAction.fadeOut(withDuration: 0.6)
-        let scaleUp = SKAction.scale(to: 0.75, duration: 0.6)
+        let scaleUp = SKAction.scale(to: titleOutScale, duration: 0.6)
         let titleOutAnimation = SKAction.group([fadeOut, scaleUp])
         titleOutAnimation.timingMode = .easeOut
 
@@ -57,8 +67,8 @@ class MainMenuScene: SKScene {
         let versionLabel = SKLabelNode(fontNamed: "Helvetica-UltraLight")
         versionLabel.text = "Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")"
         versionLabel.fontColor = UIColor(hex: "#bababa")
-        versionLabel.fontSize = 22
-        versionLabel.position = CGPoint(x: frame.midX, y: frame.midY - 50)
+        versionLabel.fontSize = versionLabelFontSize
+        versionLabel.position = CGPoint(x: frame.midX, y: frame.midY + versionLabelPositionOffset)
         versionLabel.alpha = 0.0
         addChild(versionLabel)
 
@@ -66,8 +76,8 @@ class MainMenuScene: SKScene {
         let startButton = SKLabelNode(fontNamed: "Helvetica-Bold")
         startButton.text = "Start Game"
         startButton.name = "StartButton"
-        startButton.fontSize = 52
-        startButton.position = CGPoint(x: frame.midX, y: frame.midY - 220)
+        startButton.fontSize = startButtonFontSize
+        startButton.position = CGPoint(x: frame.midX, y: frame.midY + startButtonPositionOffset)
         startButton.alpha = 0.0
         addChild(startButton)
 
@@ -75,7 +85,7 @@ class MainMenuScene: SKScene {
         let copyrightLabel = SKLabelNode(fontNamed: "Helvetica-UltraLight")
         copyrightLabel.text = "Copyright © 2024 Bucaa Studio. All Rights Reserved."
         copyrightLabel.fontColor = UIColor(hex: "#666666")
-        copyrightLabel.fontSize = 14
+        copyrightLabel.fontSize = copyrightLabelFontSize
         copyrightLabel.position = CGPoint(x: frame.midX, y: 24)
         copyrightLabel.alpha = 0.0
         addChild(copyrightLabel)
