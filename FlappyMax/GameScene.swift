@@ -109,8 +109,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupStaminaBar()
         setupHero()
         setupFloor()
-//        setupPoles()
-//        setupCollectibles()
+        setupPoles()
+        setupCollectibles()
 
         // Load and preload sound effects
         loadSoundEffects()
