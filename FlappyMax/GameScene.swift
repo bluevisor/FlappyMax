@@ -58,6 +58,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal let minDistanceFromPole: CGFloat = 50.0
     internal var poleSectionLength: CGFloat = 0.0
     internal var polePairs: [SKNode] = []
+    
+    // Cache for sorted pole pairs, updated each frame
+    internal var cachedSortedPairs: [(SKNode, SKNode)] = []
 
     // MARK: - Collectable Configuration
     internal let numberOfCoins = 10
@@ -98,6 +101,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didMove(to view: SKView) {
+        print("GameScene: Starting setup")
         self.physicsWorld.gravity = CGVector(dx: 0.0, dy: gravity)
         self.physicsWorld.contactDelegate = self
         setupLabels()
@@ -105,10 +109,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupStaminaBar()
         setupHero()
         setupFloor()
+        print("GameScene: About to setup poles")
         setupPoles()
+        print("GameScene: About to setup collectibles")
         setupCollectibles()
+        print("GameScene: Setup complete")
 
-        // Load and preload sound effects
         loadSoundEffects()
     }
 
@@ -266,13 +272,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         mainScoreLabel.fontColor = .white
         mainScoreLabel.position = CGPoint(
             x: frame.width / 2,
-            y: frame.height - GameConfig.Metrics.topMargin
+            y: frame.height - GameConfig.Metrics.topMargin - mainScoreLabel.frame.height / 2
         )
         mainScoreLabel.zPosition = 100
         addChild(mainScoreLabel)
 
         // Setup coin counter with sprite
-        let coinTexture = SKTexture(imageNamed: "coin_01.png")
+        let coinTexture = SKTexture(imageNamed: "coin_13.png")
         coinTexture.filteringMode = .nearest
         let coinSprite = SKSpriteNode(texture: coinTexture)
         
@@ -295,9 +301,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         coinCounter.zPosition = 100
         
         // Position sprite and label within the counter
-        coinSprite.position = CGPoint(x: -coinSize.width/2, y: 0)
+        coinSprite.position = CGPoint(x: -coinSize.width/2, y: 4)
         coinScoreLabel.position = CGPoint(
-            x: coinSize.width/2 + GameConfig.scaled(5),
+            x: coinSize.width/2 + GameConfig.scaled(3),
             y: -coinSize.height/4
         )
         
@@ -416,6 +422,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         moveBackgrounds(speed: backgroundSpeed)
         moveFloor(speed: floorSpeed)
         movePoles(speed: objectSpeed)
+        
+        // Update pole pair cache after moving poles but before moving collectibles
+        updateConsecutivePolePairs()
+        
         moveCollectibles(speed: objectSpeed)
 
         if currentStamina > 0 && !gameOver {

@@ -48,7 +48,7 @@ class GameOverScene: SKScene {
         scoreContainer.addChild(scoreLabel)
         
         // Coin Counter
-        let coinTexture = SKTexture(imageNamed: "coin_01.png")
+        let coinTexture = SKTexture(imageNamed: "coin_13.png")
         coinTexture.filteringMode = .nearest
         let coinSprite = SKSpriteNode(texture: coinTexture)
         let coinSize = GameConfig.adaptiveSize(
@@ -65,7 +65,7 @@ class GameOverScene: SKScene {
         coinLabel.horizontalAlignmentMode = .left
         
         let coinCounter = SKNode()
-        coinSprite.position = CGPoint(x: GameConfig.scaled(10), y: coinSize.height/4)
+        coinSprite.position = CGPoint(x: GameConfig.scaled(20), y: coinSize.height/4 + GameConfig.scaled(4))
         coinLabel.position = CGPoint(x: GameConfig.scaled(10) + coinSize.width + GameConfig.scaled(5), y: 0)
         
         coinCounter.addChild(coinSprite)
@@ -141,7 +141,7 @@ class GameOverScene: SKScene {
         restartButton.text = "Restart Game"
         restartButton.fontSize = GameConfig.adaptiveFontSize(24)
         restartButton.fontColor = .white
-        restartButton.position = CGPoint(x: -GameConfig.scaled(100), y: 0)
+        restartButton.position = CGPoint(x: -GameConfig.scaled(120), y: 0)
         restartButton.name = "restartButton"
         
         // Main Menu Button
@@ -149,7 +149,7 @@ class GameOverScene: SKScene {
         menuButton.text = "Main Menu"
         menuButton.fontSize = GameConfig.adaptiveFontSize(24)
         menuButton.fontColor = .white
-        menuButton.position = CGPoint(x: GameConfig.scaled(100), y: 0)
+        menuButton.position = CGPoint(x: GameConfig.scaled(120), y: 0)
         menuButton.name = "menuButton"
         
         buttonsContainer.addChild(restartButton)

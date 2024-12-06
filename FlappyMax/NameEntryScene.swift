@@ -131,29 +131,32 @@ class NameEntryScene: SKScene {
     }
     
     private func cleanupTextField() {
+        print("Cleaning up text field...")
         // Force resign first responder on main thread
         DispatchQueue.main.async { [weak self] in
+            print("Resigning first responder...")
             self?.nameField?.resignFirstResponder()
-        }
-        
-        // Ensure removal on main thread
-        DispatchQueue.main.async { [weak self] in
+            // Remove and nil out the text field in the same async block
+            print("Removing text field from superview...")
             self?.nameField?.removeFromSuperview()
             self?.nameField = nil
         }
     }
     
     private func transitionToGameOver(with score: ScoreEntry) {
+        print("Starting transition to game over scene")
         // Clean up text field
         cleanupTextField()
         
         // Wait a brief moment to ensure cleanup is complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self = self else { return }
             
+            print("Performing final cleanup before transition")
             // Double check cleanup
             self.cleanupTextField()
             
+            print("Creating and presenting game over scene")
             // Create and present game over scene
             let gameOverScene = GameOverScene(size: self.size)
             gameOverScene.currentScore = score

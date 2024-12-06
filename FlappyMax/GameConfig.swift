@@ -6,6 +6,7 @@
 //
 // Configuration for different devices and game parameters
 
+import Foundation
 import UIKit
 import SpriteKit
 
@@ -64,7 +65,7 @@ enum GameConfig {
         static var coin: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 0.4
-            case .iPad: return 0.4
+            case .iPad: return 0.8
             case .other: return 0.4 * deviceScaleFactor
             }
         }
@@ -72,7 +73,7 @@ enum GameConfig {
         static var burger: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 1.6
-            case .iPad: return 1.6
+            case .iPad: return 2.4
             case .other: return 1.6 * deviceScaleFactor
             }
         }
@@ -178,9 +179,9 @@ enum GameConfig {
         
         static var poleSpacing: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return screenSize.width * 0.6
-            case .iPad: return screenSize.width * 0.5
-            case .other: return screenSize.width * 0.6
+            case .iPhone: return screenSize.width * 0.5
+            case .iPad: return screenSize.width * 0.42
+            case .other: return screenSize.width * 0.5
             }
         }
         
@@ -192,17 +193,17 @@ enum GameConfig {
         // Pole Positioning
         static var polePairMinY: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return heroBaseSize.height * 2.0
-            case .iPad: return heroBaseSize.height * 2.5
-            case .other: return heroBaseSize.height * 2.0 * deviceScaleFactor
+            case .iPhone: return heroBaseSize.height * 3.0
+            case .iPad: return heroBaseSize.height * 5
+            case .other: return heroBaseSize.height * 3.0 * deviceScaleFactor
             }
         }
         
         static var polePairMaxY: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return screenSize.height - (heroBaseSize.height * 2.0)
-            case .iPad: return screenSize.height - (heroBaseSize.height * 2.5)
-            case .other: return screenSize.height - (heroBaseSize.height * 2.0 * deviceScaleFactor)
+            case .iPhone: return screenSize.height - (heroBaseSize.height * 3.0)
+            case .iPad: return screenSize.height - (heroBaseSize.height * 3.5)
+            case .other: return screenSize.height - (heroBaseSize.height * 3.0 * deviceScaleFactor)
             }
         }
         

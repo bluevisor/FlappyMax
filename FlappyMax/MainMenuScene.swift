@@ -7,6 +7,7 @@
 
 import SpriteKit
 import AVFoundation
+import UIKit
 
 class MainMenuScene: SKScene {
 
@@ -14,6 +15,21 @@ class MainMenuScene: SKScene {
     var swooshSoundEffect: AVAudioPlayer?
 
     override func didMove(to view: SKView) {
+        print("\n=== Device Configuration ===")
+        print("- Current Device: \(DeviceType.current)")
+        print("- Screen Size: \(UIScreen.main.bounds.size)")
+        print("- Scale Factor: \(GameConfig.deviceScaleFactor)")
+        
+        // Get safe area insets using the modern API
+        let safeAreaInsets: UIEdgeInsets
+        if let windowScene = view.window?.windowScene {
+            safeAreaInsets = windowScene.windows.first?.safeAreaInsets ?? .zero
+        } else {
+            safeAreaInsets = .zero
+        }
+        print("- Safe Area Insets: \(safeAreaInsets)")
+        print("=========================\n")
+        
         preloadAudio()
         let background = BackgroundManager.shared.createBackground(size: self.size)
         addChild(background)

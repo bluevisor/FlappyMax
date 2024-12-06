@@ -16,7 +16,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "26"
             endingLineNumber = "26"
-            landmarkName = "setupCollectibles()"
+            landmarkName = "updateConsecutivePolePairs()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -32,7 +32,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "232"
             endingLineNumber = "232"
-            landmarkName = "stopAllSoundEffects()"
+            landmarkName = "handleGameOver()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
