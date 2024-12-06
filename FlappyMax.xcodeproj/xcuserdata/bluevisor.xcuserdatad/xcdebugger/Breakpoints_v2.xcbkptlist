@@ -32,7 +32,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "232"
             endingLineNumber = "232"
-            landmarkName = "setupLabels()"
+            landmarkName = "stopAllSoundEffects()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

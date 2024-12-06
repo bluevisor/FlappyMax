@@ -11,9 +11,7 @@ import AVFoundation
 
 // MARK: - General Game Configuration
 let gravity: CGFloat = -9.0
-let screenMargin: CGFloat = 100.0
 let backgroundColorValue = SKColor(red: 50/255, green: 150/255, blue: 250/255, alpha: 1.0)
-let poleSpacing: CGFloat = 900.0
 
 struct PhysicsCategory {
     static let hero: UInt32 = 0x1 << 0
@@ -22,14 +20,6 @@ struct PhysicsCategory {
     static let burger: UInt32 = 0x1 << 3
     static let scoreZone: UInt32 = 0x1 << 4
     static let floor: UInt32 = 0x1 << 5
-}
-
-struct ScoreEntry: Codable {
-    var name: String
-    var mainScore: Int
-    var coins: Int
-    var burgers: Int
-    var date: Date
 }
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -42,28 +32,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Background Configuration
     internal let numberOfBackgrounds = 3
-    internal let backgroundSpeed: CGFloat = 5.0
+    internal var backgroundSpeed: CGFloat { GameConfig.Physics.gameSpeed * 0.625 } // 5/8 of base speed
     internal var backgroundNodes: [SKSpriteNode] = []
     internal var gameOver = false
 
-    let leaderboardKey = "Leaderboard"
+    private let leaderboardManager = LeaderboardManager.shared
 
     // MARK: - Hero Configuration
-    internal let heroTextureScale: CGFloat = 2.0
-    internal let flapImpulse: CGFloat = 150.0
+    internal let heroTextureScale: CGFloat = GameConfig.Scales.hero
     internal var hero: SKSpriteNode!
     internal var stamina: CGFloat = 100.0
     internal let staminaDepletion: CGFloat = 1.0
     internal let staminaReplenishment: CGFloat = 25.0
 
     // MARK: - Floor Configuration
-    internal let floorSpeed: CGFloat = 8.0
+    internal var floorSpeed: CGFloat { GameConfig.Physics.gameSpeed }
     internal let floorTextureScale: CGFloat = 8.0
     internal var floorNodes: [SKSpriteNode] = []
 
     // MARK: - Pole Configuration
     internal let numberOfPolePairs = 4
-    internal var polePairGap: CGFloat = 300.0
+    internal var polePairGap: CGFloat { GameConfig.scaled(GameConfig.Metrics.polePairGap) }
+    internal var poleSpacing: CGFloat { GameConfig.scaled(GameConfig.Metrics.poleSpacing) }
     internal let poleTextureScale: CGFloat = 6.0
     internal let minDistanceFromPole: CGFloat = 50.0
     internal var poleSectionLength: CGFloat = 0.0
@@ -71,10 +61,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Collectable Configuration
     internal let numberOfCoins = 10
-    internal let numberOfBurgers = 1
     internal let coinAnimationSpeed: TimeInterval = 1/30
-    internal let coinTextureScale: CGFloat = 0.8
-    internal let burgerTextureScale: CGFloat = 3.0
+    internal let coinTextureScale: CGFloat = GameConfig.Scales.coin
+    internal let burgerTextureScale: CGFloat = GameConfig.Scales.burger
     internal let minRandomXPosition: CGFloat = 200.0
     internal let maxRandomXPosition: CGFloat = 400.0
     internal var collectableSectionLength: CGFloat = 0.0
@@ -84,11 +73,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal let maxStamina: CGFloat = 100.0
     internal var currentStamina: CGFloat = 100.0
     internal let staminaDepletionRate: CGFloat = 0.01
-    internal let staminaBarWidth: CGFloat = 200.0
+    internal var staminaBarWidth: CGFloat = 200.0
     internal let staminaBarHeight: CGFloat = 20.0
 
     // MARK: - Movement Speeds
-    internal let objectSpeed: CGFloat = 8.0
+    internal var objectSpeed: CGFloat { GameConfig.Physics.gameSpeed }
 
     // MARK: - Obstacles
     internal var obstacles: [SKSpriteNode] = []
@@ -99,6 +88,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var gameOverSoundEffects: [AVAudioPlayer] = []
     var flapSoundEffects: [AVAudioPlayer] = []
     let soundEffectPoolSize = 3
+
+    var gravity: CGFloat { GameConfig.Physics.gravity }
+    var flapImpulse: CGFloat { GameConfig.Physics.flapImpulse }
+
+    // Add computed property for floor height
+    var floorHeight: CGFloat {
+        floorNodes.first?.size.height ?? GameConfig.Metrics.floorHeight
+    }
 
     override func didMove(to view: SKView) {
         self.physicsWorld.gravity = CGVector(dx: 0.0, dy: gravity)
@@ -129,6 +126,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if let coinSoundURL = Bundle.main.url(forResource: "coin", withExtension: "mp3") {
             for _ in 0..<soundEffectPoolSize {
                 if let player = try? AVAudioPlayer(contentsOf: coinSoundURL) {
+                    player.volume = 0.5  // Set coin sound volume to 50%
                     player.prepareToPlay()
                     coinSoundEffects.append(player)
                 }
@@ -194,12 +192,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
         
     func handleGameOver() {
-        stopAllSoundEffects()
+        // Play game over sound
         playSoundEffect(from: gameOverSoundEffects)
-        let gameOverScene = GameOverScene(size: self.size)
-        gameOverScene.scaleMode = .aspectFill
-        gameOverScene.currentScore = ScoreEntry(name: "", mainScore: mainScore, coins: coinScore, burgers: burgerScore, date: Date())
-        view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
+        
+        // Create score entry
+        let score = ScoreEntry(
+            mainScore: mainScore,
+            coins: coinScore,
+            name: nil,
+            date: Date()
+        )
+        
+        // If score is 0, go directly to game over scene
+        if mainScore == 0 {
+            let gameOverScene = GameOverScene(size: self.size)
+            gameOverScene.scaleMode = .aspectFill
+            gameOverScene.currentScore = score
+            view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
+            return
+        }
+        
+        // For non-zero scores, check if it's a high score
+        if leaderboardManager.isHighScore(mainScore) {
+            let nameEntryScene = NameEntryScene(size: self.size, score: score)
+            nameEntryScene.scaleMode = .aspectFill
+            view?.presentScene(nameEntryScene, transition: SKTransition.fade(withDuration: 0.5))
+        } else {
+            let gameOverScene = GameOverScene(size: self.size)
+            gameOverScene.scaleMode = .aspectFill
+            gameOverScene.currentScore = score
+            view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
+        }
     }
 
     private func stopAllSoundEffects() {
@@ -212,61 +235,108 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func collect(_ collectableNode: SKSpriteNode) {
         if coinNodes.contains(collectableNode) {
             coinScore += 1
-            coinScoreLabel.text = "Coins: \(coinScore)"
+            coinScoreLabel.text = "\(coinScore)"
             playSoundEffect(from: coinSoundEffects)
             collectableNode.name = "collected"
-            collectableNode.removeFromParent()
+            // Reset and reuse the node instead of removing
+            resetCollectable(collectableNode)
         } else if burgerNodes.contains(collectableNode) {
             burgerScore += 1
+            currentStamina = min(maxStamina, currentStamina + staminaReplenishment)  // Replenish stamina
+            updateStaminaBar()  // Update the stamina bar
             playSoundEffect(from: burgerSoundEffects)
             collectableNode.name = "collected"
-            collectableNode.removeFromParent()
+            // Reset and reuse the node instead of removing
+            resetCollectable(collectableNode)
         }
     }
 
+    private func resetCollectable(_ collectable: SKSpriteNode) {
+        // Reset properties and reposition for reuse
+        collectable.position.x = frame.width + CGFloat.random(in: minRandomXPosition...maxRandomXPosition)
+        collectable.removeFromParent()
+        addChild(collectable)
+    }
+
     private func setupLabels() {
-        // Setup the main score label
-        mainScoreLabel = SKLabelNode(fontNamed: "Helvetica")
+        // Setup score label
+        mainScoreLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
+        mainScoreLabel.text = "0"
+        mainScoreLabel.fontSize = GameConfig.adaptiveFontSize(48)
+        mainScoreLabel.fontColor = .white
         mainScoreLabel.position = CGPoint(
             x: frame.width / 2,
-            y: frame.height - screenMargin * 1.2
+            y: frame.height - GameConfig.Metrics.topMargin
         )
-        mainScoreLabel.fontSize = 100
-        mainScoreLabel.fontColor = .white
-        mainScoreLabel.text = "0"
         mainScoreLabel.zPosition = 100
         addChild(mainScoreLabel)
 
-        // Setup the coin score label
-        coinScoreLabel = SKLabelNode(fontNamed: "Helvetica")
-        coinScoreLabel.position = CGPoint(
-            x: frame.width - screenMargin * 1.5,
-            y: frame.height - screenMargin
+        // Setup coin counter with sprite
+        let coinTexture = SKTexture(imageNamed: "coin_01.png")
+        coinTexture.filteringMode = .nearest
+        let coinSprite = SKSpriteNode(texture: coinTexture)
+        
+        // Use smaller scale for coin counter
+        let coinSize = GameConfig.adaptiveSize(
+            for: coinTexture,
+            baseScale: GameConfig.Scales.coinCounter,
+            spriteType: .coin
         )
-        coinScoreLabel.fontSize = 32
+        coinSprite.size = coinSize
+        
+        coinScoreLabel = SKLabelNode(fontNamed: "Helvetica")
+        coinScoreLabel.fontSize = GameConfig.adaptiveFontSize(24)
         coinScoreLabel.fontColor = .white
-        coinScoreLabel.text = "Coins: 0"
+        coinScoreLabel.text = "0"
         coinScoreLabel.zPosition = 100
-        addChild(coinScoreLabel)
+        
+        // Create a parent node to group coin sprite and label
+        let coinCounter = SKNode()
+        coinCounter.zPosition = 100
+        
+        // Position sprite and label within the counter
+        coinSprite.position = CGPoint(x: -coinSize.width/2, y: 0)
+        coinScoreLabel.position = CGPoint(
+            x: coinSize.width/2 + GameConfig.scaled(5),
+            y: -coinSize.height/4
+        )
+        
+        coinCounter.addChild(coinSprite)
+        coinCounter.addChild(coinScoreLabel)
+        
+        // Position the counter in the top-right corner with safe area consideration
+        let rightMargin = GameConfig.Metrics.screenMargin
+        coinCounter.position = CGPoint(
+            x: frame.width - rightMargin,
+            y: frame.height - GameConfig.Metrics.topMargin
+        )
+        
+        addChild(coinCounter)
     }
 
     func setupStaminaBar() {
-        let barBackground = SKSpriteNode(color: .gray, size: CGSize(width: staminaBarWidth, height: staminaBarHeight))
+        let safeLeftMargin = GameConfig.Metrics.screenMargin
+        let barWidth = min(staminaBarWidth, frame.width * 0.3)  // Limit width on smaller devices
+        
+        let barBackground = SKSpriteNode(color: .gray, size: CGSize(width: barWidth, height: staminaBarHeight))
         barBackground.position = CGPoint(
-            x: frame.minX + staminaBarWidth / 2 + 30,
-            y: frame.height - screenMargin * 0.5
+            x: safeLeftMargin + barWidth / 2,
+            y: frame.height - GameConfig.Metrics.topMargin
         )
         barBackground.zPosition = 100
         addChild(barBackground)
         
-        staminaBar = SKSpriteNode(color: .green, size: CGSize(width: staminaBarWidth, height: staminaBarHeight))
+        staminaBar = SKSpriteNode(color: .green, size: CGSize(width: barWidth, height: staminaBarHeight))
         staminaBar.anchorPoint = CGPoint(x: 0, y: 0.5)
         staminaBar.position = CGPoint(
-            x: frame.minX + 30,  // Align left side with barBackground
-            y: frame.height - screenMargin * 0.5
+            x: safeLeftMargin,
+            y: frame.height - GameConfig.Metrics.topMargin
         )
         staminaBar.zPosition = 101
         addChild(staminaBar)
+        
+        // Update the stored bar width for future reference
+        staminaBarWidth = barWidth
     }
 
     private func updateStaminaBar() {
@@ -289,10 +359,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func setupHero() {
         let heroTexture = SKTexture(imageNamed: "max")
         heroTexture.filteringMode = .nearest
+        
+        // Use the new scaling system
+        let heroSize = GameConfig.adaptiveSize(
+            for: heroTexture,
+            spriteType: .hero  // Uses the default hero scale
+        )
+        
         hero = SKSpriteNode(texture: heroTexture)
         hero.position = CGPoint(x: frame.midX / 2, y: frame.midY)
         hero.zPosition = 1
-        hero.size = CGSize(width: heroTexture.size().width * heroTextureScale, height: heroTexture.size().height * heroTextureScale)
+        hero.size = heroSize
         hero.physicsBody = SKPhysicsBody(texture: heroTexture, size: hero.size)
         hero.physicsBody?.isDynamic = true
         hero.physicsBody?.affectedByGravity = true
@@ -307,11 +384,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func setupFloor() {
         let floorTexture = SKTexture(imageNamed: "floor")
         floorTexture.filteringMode = .nearest
-        let floorWidth = floorTexture.size().width * floorTextureScale
+        
+        // Use the new scaling system
+        let floorSize = GameConfig.adaptiveSize(
+            for: floorTexture,
+            spriteType: .floor  // Uses the default floor scale
+        )
+        
+        let floorWidth = floorSize.width
         let numberOfFloors = Int(ceil(frame.size.width / floorWidth)) + 1
+        
         for i in 0..<numberOfFloors {
             let floor = SKSpriteNode(texture: floorTexture)
-            floor.size = CGSize(width: floorWidth, height: floorTexture.size().height * floorTextureScale)
+            floor.size = floorSize
             floor.anchorPoint = CGPoint(x: 0, y: 0)
             floor.position = CGPoint(x: CGFloat(i) * floorWidth, y: frame.minY)
             floor.zPosition = 10
@@ -402,36 +487,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let pathLength = pathInfo.boundingBox.width
         let point = CGPoint(x: path.boundingBox.origin.x + pathLength * t, y: path.boundingBox.origin.y)
         return point
-    }
-
-    // Function to retrieve the top 10 scores from UserDefaults
-    func getLeaderboard() -> [ScoreEntry] {
-        if let data = UserDefaults.standard.data(forKey: leaderboardKey) {
-            let decoder = JSONDecoder()
-            return (try? decoder.decode([ScoreEntry].self, from: data)) ?? []
-        }
-        return []
-    }
-
-    // Function to save the top 10 scores to UserDefaults
-    func saveLeaderboard(_ leaderboard: [ScoreEntry]) {
-        let encoder = JSONEncoder()
-        if let data = try? encoder.encode(leaderboard) {
-            UserDefaults.standard.set(data, forKey: leaderboardKey)
-        }
-    }
-
-    // Function to add a new score if it's in the top 10
-    func updateLeaderboard(with newEntry: ScoreEntry) {
-        var leaderboard = getLeaderboard()
-        leaderboard.append(newEntry)
-
-        leaderboard.sort { $0.mainScore > $1.mainScore }
-
-        if leaderboard.count > 10 {
-            leaderboard.removeLast() // Keep only top 10
-        }
-        saveLeaderboard(leaderboard)
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {

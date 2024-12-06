@@ -55,6 +55,7 @@ class MainMenuScene: SKScene {
         titleOutAnimation.timingMode = .easeOut
 
         // Run titleIn animation, then titleOut animation
+        self.swooshSoundEffect?.play()  // Play sound effect when titleIn starts
         titleIn.run(SKAction.sequence([
             titleInAnimation,
             SKAction.run {
@@ -83,7 +84,7 @@ class MainMenuScene: SKScene {
 
         // Copyright label
         let copyrightLabel = SKLabelNode(fontNamed: "Helvetica-UltraLight")
-        copyrightLabel.text = "Copyright © 2024 Bucaa Studio. All Rights Reserved."
+        copyrightLabel.text = "Copyright 2024 Bucaa Studio. All Rights Reserved."
         copyrightLabel.fontColor = UIColor(hex: "#666666")
         copyrightLabel.fontSize = copyrightLabelFontSize
         copyrightLabel.position = CGPoint(x: frame.midX, y: 24)
@@ -116,7 +117,7 @@ class MainMenuScene: SKScene {
         startButton.run(SKAction.repeatForever(breatheAction))
         
         // Play swoosh sound after setup
-        swooshSoundEffect?.play()
+        //swooshSoundEffect?.play()
     }
 
     private func preloadAudio() {

@@ -6,140 +6,182 @@
 //
 
 import SpriteKit
+import Foundation
 
 class GameOverScene: SKScene {
-    var currentScore: ScoreEntry?
-    private var hasPromptedForName = false
-    private var leaderboardLabel: SKLabelNode?
-
+    var currentScore: ScoreEntry!
+    private let leaderboardManager = LeaderboardManager.shared
+    
     override func didMove(to view: SKView) {
-        let background = BackgroundManager.shared.createBackground(size: self.size)
-        addChild(background)
+        // Black background
+        backgroundColor = .black
         
-        let ifIphone = UIDevice.current.userInterfaceIdiom == .phone
-        let titleScale: CGFloat = ifIphone ? 0.45 : 0.65
-        let gameOverLabelFontSize: CGFloat = ifIphone ? 60 : 100
-        let gameOverLabelPositionOffset: CGFloat = ifIphone ? 110 : 260
-        let buttonFontSize: CGFloat = ifIphone ? 30 : 40
-        let retryButtonPositionOffset: CGFloat = ifIphone ? -110 : -280
-        let returnToMenuButtonPositionOffset: CGFloat = ifIphone ? -150 : -350
-
-        let title = SKSpriteNode(texture: SKTexture(imageNamed: "flappymax_title_white"))
-        title.position = CGPoint(x: frame.midX, y: frame.midY)
-        title.setScale(titleScale)
-        title.alpha = 0.05
-        title.zPosition = -1
-        addChild(title)
-
-        // Game over label
+        // Add faded game title
+        let titleTexture = SKTexture(imageNamed: "flappymax_title_white")
+        let titleNode = SKSpriteNode(texture: titleTexture)
+        titleNode.alpha = 0.1 // Faded appearance
+        titleNode.setScale(GameConfig.Scales.titleFaded)
+        titleNode.position = CGPoint(x: frame.midX, y: frame.midY)
+        titleNode.zPosition = -1 // Behind other elements
+        addChild(titleNode)
+        
+        let contentNode = SKNode()
+        
+        // Game Over Title
         let gameOverLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
         gameOverLabel.text = "Game Over"
-        gameOverLabel.fontSize = gameOverLabelFontSize
-        gameOverLabel.position = CGPoint(x: frame.midX, y: frame.midY + gameOverLabelPositionOffset)
-        addChild(gameOverLabel)
+        gameOverLabel.fontSize = GameConfig.adaptiveFontSize(48)
+        gameOverLabel.fontColor = .white
+        gameOverLabel.position = CGPoint(x: 0, y: GameConfig.scaled(60))
+        contentNode.addChild(gameOverLabel)
         
-        displayLeaderboard()
-
-        if let score = currentScore, shouldPromptForName(score: score) {
-            // Add a 1-second delay before prompting for name
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.promptForName(for: score)
-            }
-        }
-
-        // Return to menu button
-        let returnToMenuButton = SKLabelNode(fontNamed: "Helvetica-Bold")
-        returnToMenuButton.text = "Return to Menu"
-        returnToMenuButton.name = "ReturnToMenuButton"
-        returnToMenuButton.fontSize = buttonFontSize
-        returnToMenuButton.position = CGPoint(x: frame.midX, y: frame.midY + returnToMenuButtonPositionOffset)
-        addChild(returnToMenuButton)
-
-        // Retry button
-        let retryButton = SKLabelNode(fontNamed: "Helvetica-Bold")
-        retryButton.text = "Retry"
-        retryButton.name = "RetryButton"
-        retryButton.fontSize = buttonFontSize
-        retryButton.position = CGPoint(x: frame.midX, y: frame.midY + retryButtonPositionOffset)
-        addChild(retryButton)
-    }
-
-    private func shouldPromptForName(score: ScoreEntry) -> Bool {
-        guard score.mainScore > 0 else { return false }
-        let leaderboard = GameScene().getLeaderboard()
-        return leaderboard.count < 10 || score.mainScore > leaderboard.last!.mainScore
-    }
-
-    private func promptForName(for score: ScoreEntry) {
-        var score = score
-
-        guard !hasPromptedForName else { return }
-        hasPromptedForName = true
-
-        if view?.window?.rootViewController?.presentedViewController == nil {
-            let alert = UIAlertController(title: "New High Score!", message: "Enter your name", preferredStyle: .alert)
-            alert.addTextField { textField in textField.placeholder = "Your Name" }
-            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: { [weak self] _ in
-                if let name = alert.textFields?.first?.text, !name.isEmpty {
-                    score.name = name
-                    self?.updateLeaderboard(with: score)
-
-                    DispatchQueue.main.async {
-                        self?.displayLeaderboard()
-                    }
-                }
-            }))
-            view?.window?.rootViewController?.present(alert, animated: true, completion: nil)
-        }
-    }
-
-    private func updateLeaderboard(with score: ScoreEntry) {
-        var leaderboard = GameScene().getLeaderboard()
-        leaderboard.append(score)
-        leaderboard.sort { $0.mainScore > $1.mainScore }
-        // Keep only the top 10 entries
-        if leaderboard.count > 10 {
-            leaderboard.removeLast()
-        }
-        GameScene().saveLeaderboard(leaderboard)
-    }
-
-    private func displayLeaderboard() {
-        // Remove existing leaderboard entries if any
-        self.children.filter { $0.name == "LeaderboardEntry" }.forEach { $0.removeFromParent() }
+        // Create a score container node
+        let scoreContainer = SKNode()
         
-        let leaderboard = GameScene().getLeaderboard()
-        let maxEntriesToShow = 10
-        let startY = frame.midY + 170
-        let entrySpacing: CGFloat = 40
-
-        // Display leaderboard entries
-        for (index, entry) in leaderboard.prefix(maxEntriesToShow).enumerated() {
-            let scoreLabel = SKLabelNode(fontNamed: "Helvetica")
-            scoreLabel.name = "LeaderboardEntry"  // Name it for easy removal in future refreshes
-            scoreLabel.fontSize = 26
-            scoreLabel.position = CGPoint(x: frame.midX, y: startY - CGFloat(index) * entrySpacing)
-            scoreLabel.text = "\(index + 1). \(entry.name): \(entry.mainScore) | Coins: \(entry.coins) | Burgers: \(entry.burgers)"
-            addChild(scoreLabel)
+        // Score Label
+        let scoreLabel = SKLabelNode(fontNamed: "Helvetica")
+        scoreLabel.text = "Score: \(currentScore.mainScore)"
+        scoreLabel.fontSize = GameConfig.adaptiveFontSize(24)
+        scoreLabel.fontColor = .white
+        scoreLabel.horizontalAlignmentMode = .right
+        scoreLabel.position = CGPoint(x: -GameConfig.scaled(10), y: 0)
+        scoreContainer.addChild(scoreLabel)
+        
+        // Coin Counter
+        let coinTexture = SKTexture(imageNamed: "coin_01.png")
+        coinTexture.filteringMode = .nearest
+        let coinSprite = SKSpriteNode(texture: coinTexture)
+        let coinSize = GameConfig.adaptiveSize(
+            for: coinTexture,
+            baseScale: GameConfig.Scales.highScoreCoin,
+            spriteType: .coin
+        )
+        coinSprite.size = coinSize
+        
+        let coinLabel = SKLabelNode(fontNamed: "Helvetica")
+        coinLabel.text = "\(currentScore.coins)"
+        coinLabel.fontSize = GameConfig.adaptiveFontSize(24)
+        coinLabel.fontColor = .white
+        coinLabel.horizontalAlignmentMode = .left
+        
+        let coinCounter = SKNode()
+        coinSprite.position = CGPoint(x: GameConfig.scaled(10), y: coinSize.height/4)
+        coinLabel.position = CGPoint(x: GameConfig.scaled(10) + coinSize.width + GameConfig.scaled(5), y: 0)
+        
+        coinCounter.addChild(coinSprite)
+        coinCounter.addChild(coinLabel)
+        scoreContainer.addChild(coinCounter)
+        
+        scoreContainer.position = CGPoint(x: 0, y: GameConfig.scaled(20))
+        contentNode.addChild(scoreContainer)
+        
+        // High Scores Title
+        let highScoresTitle = SKLabelNode(fontNamed: "Helvetica-Bold")
+        highScoresTitle.text = "High Scores"
+        highScoresTitle.fontSize = GameConfig.adaptiveFontSize(28)
+        highScoresTitle.fontColor = .white
+        highScoresTitle.position = CGPoint(x: 0, y: GameConfig.scaled(-20))
+        contentNode.addChild(highScoresTitle)
+        
+        // High Scores List - Two columns
+        let leaderboard = leaderboardManager.getLeaderboard()
+        let entriesPerColumn = 5
+        
+        for (index, score) in leaderboard.prefix(10).enumerated() {
+            let column = index / entriesPerColumn
+            let row = index % entriesPerColumn
+            let xOffset = column == 0 ? -GameConfig.scaled(140) : GameConfig.scaled(140)
+            let yPos = GameConfig.scaled(-50 - CGFloat(row * 25))
+            
+            // Score entry
+            let entryNode = SKNode()
+            
+            // Rank
+            let rankLabel = SKLabelNode(fontNamed: "Helvetica")
+            rankLabel.text = "\(index + 1)."
+            rankLabel.fontSize = GameConfig.adaptiveFontSize(16)
+            rankLabel.fontColor = .white
+            rankLabel.horizontalAlignmentMode = .right
+            rankLabel.position = CGPoint(x: -GameConfig.scaled(70), y: 0)
+            entryNode.addChild(rankLabel)
+            
+            // Name (truncate if too long)
+            let nameLabel = SKLabelNode(fontNamed: "Helvetica")
+            let name = score.name ?? "Unknown"
+            nameLabel.text = name.count > 8 ? String(name.prefix(8)) + "..." : name
+            nameLabel.fontSize = GameConfig.adaptiveFontSize(16)
+            nameLabel.fontColor = .white
+            nameLabel.horizontalAlignmentMode = .left
+            nameLabel.position = CGPoint(x: -GameConfig.scaled(60), y: 0)
+            entryNode.addChild(nameLabel)
+            
+            // Score with coins
+            let scoreText = SKLabelNode(fontNamed: "Helvetica")
+            scoreText.text = "\(score.mainScore) (\(score.coins)🪙)"
+            scoreText.fontSize = GameConfig.adaptiveFontSize(16)
+            scoreText.fontColor = .white
+            scoreText.horizontalAlignmentMode = .right
+            scoreText.position = CGPoint(x: GameConfig.scaled(100), y: 0)
+            entryNode.addChild(scoreText)
+            
+            entryNode.position = CGPoint(x: xOffset, y: yPos)
+            contentNode.addChild(entryNode)
         }
+        
+        // Center the entire content node
+        contentNode.position = CGPoint(x: frame.midX, y: frame.height * 0.65)
+        addChild(contentNode)
+        
+        // Add buttons at the bottom of the screen
+        let buttonsContainer = SKNode()
+        buttonsContainer.position = CGPoint(x: frame.midX, y: frame.height * 0.12)
+        
+        // Restart Button
+        let restartButton = SKLabelNode(fontNamed: "Helvetica")
+        restartButton.text = "Restart Game"
+        restartButton.fontSize = GameConfig.adaptiveFontSize(24)
+        restartButton.fontColor = .white
+        restartButton.position = CGPoint(x: -GameConfig.scaled(100), y: 0)
+        restartButton.name = "restartButton"
+        
+        // Main Menu Button
+        let menuButton = SKLabelNode(fontNamed: "Helvetica")
+        menuButton.text = "Main Menu"
+        menuButton.fontSize = GameConfig.adaptiveFontSize(24)
+        menuButton.fontColor = .white
+        menuButton.position = CGPoint(x: GameConfig.scaled(100), y: 0)
+        menuButton.name = "menuButton"
+        
+        buttonsContainer.addChild(restartButton)
+        buttonsContainer.addChild(menuButton)
+        addChild(buttonsContainer)
+        
+        // Update leaderboard with current score
+        leaderboardManager.updateLeaderboard(with: currentScore)
     }
-
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
-        let nodesAtLocation = nodes(at: location)
+        let touchedNodes = nodes(at: location)
         
-        if nodesAtLocation.contains(where: { $0.name == "RetryButton" }) {
-            let gameScene = GameScene(size: self.size)
-            gameScene.scaleMode = .aspectFill
-            view?.presentScene(gameScene, transition: SKTransition.crossFade(withDuration: 1.0))
-        }
-
-        if nodesAtLocation.contains(where: { $0.name == "ReturnToMenuButton" }) {
-            let mainMenuScene = MainMenuScene(size: self.size)
-            mainMenuScene.scaleMode = .aspectFill
-            view?.presentScene(mainMenuScene, transition: SKTransition.crossFade(withDuration: 1.0))
+        for node in touchedNodes {
+            switch node.name {
+            case "restartButton":
+                let gameScene = GameScene(size: self.size)
+                gameScene.scaleMode = .aspectFill
+                view?.presentScene(gameScene, transition: SKTransition.fade(withDuration: 0.5))
+                return
+                
+            case "menuButton":
+                let menuScene = MainMenuScene(size: self.size)
+                menuScene.scaleMode = .aspectFill
+                view?.presentScene(menuScene, transition: SKTransition.fade(withDuration: 0.5))
+                return
+                
+            default:
+                continue
+            }
         }
     }
 }
-

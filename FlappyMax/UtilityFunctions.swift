@@ -12,13 +12,23 @@ class UtilityFunctions {
     static func createCurvePath(between firstPolePair: SKNode, and secondPolePair: SKNode) -> CGPath {
         let path = CGMutablePath()
 
-        // Define starting and ending points for the curve
-        let startPoint = CGPoint(x: firstPolePair.position.x, y: firstPolePair.position.y)
-        let endPoint = CGPoint(x: secondPolePair.position.x, y: secondPolePair.position.y)
+        // Get the score zone positions which represent the gap between poles
+        let firstScoreZone = firstPolePair.childNode(withName: "scoreZone")
+        let secondScoreZone = secondPolePair.childNode(withName: "scoreZone")
+        
+        // Define starting and ending points for the curve using score zone positions
+        let startPoint = CGPoint(
+            x: firstPolePair.position.x,
+            y: firstScoreZone?.position.y ?? firstPolePair.position.y
+        )
+        let endPoint = CGPoint(
+            x: secondPolePair.position.x,
+            y: secondScoreZone?.position.y ?? secondPolePair.position.y
+        )
 
         // Calculate control points for the Bezier curve
-        let controlPoint1 = CGPoint(x: (startPoint.x + endPoint.x) / 2, y: startPoint.y + 200)
-        let controlPoint2 = CGPoint(x: (startPoint.x + endPoint.x) / 2, y: endPoint.y - 200)
+        let controlPoint1 = CGPoint(x: (startPoint.x + endPoint.x) / 2, y: startPoint.y + 100)
+        let controlPoint2 = CGPoint(x: (startPoint.x + endPoint.x) / 2, y: endPoint.y - 100)
 
         // Create the Bezier curve path
         path.move(to: startPoint)
@@ -51,4 +61,3 @@ class UtilityFunctions {
         return point
     }
 }
-
