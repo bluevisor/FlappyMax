@@ -113,7 +113,6 @@ class NameEntryScene: SKScene {
         let availableSpace = view.frame.height - keyboardHeight
         
         if textFieldMaxY > availableSpace {
-            let overlap = textFieldMaxY - availableSpace
             UIView.animate(withDuration: 0.3) {
                 textField.frame.origin.y = view.frame.height * 0.3 // Move higher when keyboard shows
                 self.contentNode.position.y = self.frame.height * 0.9 // Move content higher
@@ -132,9 +131,35 @@ class NameEntryScene: SKScene {
     }
     
     private func cleanupTextField() {
-        nameField?.resignFirstResponder()
-        nameField?.removeFromSuperview()
-        nameField = nil
+        // Force resign first responder on main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.nameField?.resignFirstResponder()
+        }
+        
+        // Ensure removal on main thread
+        DispatchQueue.main.async { [weak self] in
+            self?.nameField?.removeFromSuperview()
+            self?.nameField = nil
+        }
+    }
+    
+    private func transitionToGameOver(with score: ScoreEntry) {
+        // Clean up text field
+        cleanupTextField()
+        
+        // Wait a brief moment to ensure cleanup is complete
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self = self else { return }
+            
+            // Double check cleanup
+            self.cleanupTextField()
+            
+            // Create and present game over scene
+            let gameOverScene = GameOverScene(size: self.size)
+            gameOverScene.currentScore = score
+            gameOverScene.scaleMode = .aspectFill
+            self.view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
+        }
     }
     
     override func willMove(from view: SKView) {
@@ -172,19 +197,8 @@ extension NameEntryScene: UITextFieldDelegate {
         // Update leaderboard
         leaderboardManager.updateLeaderboard(with: finalScore)
         
-        // Ensure we're on the main thread and text field is gone before transitioning
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            
-            // Double check cleanup
-            self.cleanupTextField()
-            
-            // Transition to game over scene
-            let gameOverScene = GameOverScene(size: self.size)
-            gameOverScene.currentScore = finalScore
-            gameOverScene.scaleMode = .aspectFill
-            self.view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
-        }
+        // Transition to game over scene with cleanup
+        transitionToGameOver(with: finalScore)
         
         return true
     }

@@ -63,6 +63,20 @@ enum GameConfig {
             )
         }
         
+        // Collectible Y Position Limits
+        static var collectibleMinY: CGFloat {
+            let floorHeight = GameConfig.Metrics.floorHeight
+            let coinTexture = SKTexture(imageNamed: "coin_01.png")
+            let coinHeight = coinTexture.size().height * Scales.coin * deviceScaleFactor
+            return floorHeight + (coinHeight / 2) + 20  // 20pt extra padding from floor
+        }
+        
+        static var collectibleMaxY: CGFloat {
+            let coinTexture = SKTexture(imageNamed: "coin_01.png")
+            let coinHeight = coinTexture.size().height * Scales.coin * deviceScaleFactor
+            return screenSize.height - (coinHeight / 2) - topMargin  // Keep below top margin
+        }
+        
         // Screen dimensions
         static var screenSize: CGSize {
             let screen = UIScreen.main.bounds
@@ -71,7 +85,8 @@ enum GameConfig {
         
         // UI Layout
         static var topMargin: CGFloat {
-            let safeAreaInset = UIApplication.shared.windows.first?.safeAreaInsets.top ?? 0
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let safeAreaInset = scene?.windows.first?.safeAreaInsets.top ?? 0
             return max(safeAreaInset + 20, screenSize.height * 0.1)  // At least 20pt below safe area
         }
         
@@ -84,7 +99,7 @@ enum GameConfig {
         // Game Layout - All relative to hero size and screen
         static var polePairGap: CGFloat {
             // Gap is 3.5x hero height
-            return heroBaseSize.height * 3.0 * deviceScaleFactor
+            return heroBaseSize.height * 3.5
         }
         
         static var poleSpacing: CGFloat {
@@ -118,7 +133,8 @@ enum GameConfig {
         }
         
         static var screenMargin: CGFloat {
-            let safeAreaInset = UIApplication.shared.windows.first?.safeAreaInsets.left ?? 0
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let safeAreaInset = scene?.windows.first?.safeAreaInsets.left ?? 0
             return max(safeAreaInset + 20, screenSize.width * 0.1)  // At least 20pt from safe area
         }
         
@@ -146,24 +162,24 @@ enum GameConfig {
         static var gravity: CGFloat {
             switch DeviceType.current {
             case .iPhone:  return baseGravity
-            case .iPad:    return baseGravity * 1.5
-            case .other:   return baseGravity * deviceScaleFactor
+            case .iPad:    return baseGravity 
+            case .other:   return baseGravity
             }
         }
         
         static var flapImpulse: CGFloat {
             switch DeviceType.current {
             case .iPhone:  return baseFlapImpulse
-            case .iPad:    return baseFlapImpulse * 3.0
-            case .other:   return baseFlapImpulse * deviceScaleFactor
+            case .iPad:    return baseFlapImpulse * 2.5
+            case .other:   return baseFlapImpulse
             }
         }
         
         static var gameSpeed: CGFloat {
             switch DeviceType.current {
             case .iPhone:  return baseSpeed
-            case .iPad:    return baseSpeed * 1.0
-            case .other:   return baseSpeed * deviceScaleFactor
+            case .iPad:    return baseSpeed
+            case .other:   return baseSpeed
             }
         }
     }
@@ -172,7 +188,7 @@ enum GameConfig {
     static var deviceScaleFactor: CGFloat {
         switch DeviceType.current {
         case .iPhone:  return 1.0
-        case .iPad:    return 1.2
+        case .iPad:    return 1.5
         case .other:
             let currentScreen = UIScreen.main.bounds
             let widthRatio = currentScreen.width / baseScreenWidth

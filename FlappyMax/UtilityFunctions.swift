@@ -37,20 +37,20 @@ class UtilityFunctions {
         return path
     }
 
-    static func placeCollectableOnCurve(collectable: SKSpriteNode, curvePath: CGPath, deviation: CGFloat = 0.0) {
-        // Randomly select a point along the curve path
+    static func placeCollectableOnCurve(collectable: SKSpriteNode, curvePath: CGPath, deviation: CGFloat = 20.0) {
+        // Get random t value between 0.1 and 0.9 to avoid placing too close to poles
         let randomT = CGFloat.random(in: 0.1...0.9)
-        var position = positionOnPath(path: curvePath, at: randomT)
-
-        // Apply deviation if specified
-        if deviation != 0.0 {
-            let deviationX = CGFloat.random(in: -deviation...deviation)
-            let deviationY = CGFloat.random(in: -deviation...deviation)
-            position.x += deviationX
-            position.y += deviationY
-        }
-
-        collectable.position = position
+        
+        // Get base position from curve
+        let basePosition = positionOnPath(path: curvePath, at: randomT)
+        
+        // Add random vertical deviation
+        let minY = GameConfig.Metrics.collectibleMinY
+        let maxY = GameConfig.Metrics.collectibleMaxY
+        let randomY = CGFloat.random(in: minY...maxY)
+        
+        // Set final position
+        collectable.position = CGPoint(x: basePosition.x, y: randomY)
     }
 
     static func positionOnPath(path: CGPath, at t: CGFloat) -> CGPoint {

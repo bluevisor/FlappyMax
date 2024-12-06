@@ -31,8 +31,6 @@ extension GameScene {
             bottomPole.size = scaledSize
             bottomPole.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
-            // Calculate valid Y position range
-            let totalHeight = frame.height - GameConfig.Metrics.floorHeight
             let poleHeight = scaledSize.height
             let gap = polePairGap
             
@@ -111,7 +109,6 @@ extension GameScene {
                 let bottomPole = polePair.children[1] as! SKSpriteNode
 
                 // Calculate new valid position using same logic as setup
-                let totalHeight = frame.height - GameConfig.Metrics.floorHeight
                 let poleHeight = topPole.size.height
                 let gap = polePairGap
                 

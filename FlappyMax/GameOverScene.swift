@@ -102,17 +102,17 @@ class GameOverScene: SKScene {
             rankLabel.fontSize = GameConfig.adaptiveFontSize(16)
             rankLabel.fontColor = .white
             rankLabel.horizontalAlignmentMode = .right
-            rankLabel.position = CGPoint(x: -GameConfig.scaled(70), y: 0)
+            rankLabel.position = CGPoint(x: -GameConfig.scaled(80), y: 0)
             entryNode.addChild(rankLabel)
             
             // Name (truncate if too long)
             let nameLabel = SKLabelNode(fontNamed: "Helvetica")
             let name = score.name ?? "Unknown"
-            nameLabel.text = name.count > 8 ? String(name.prefix(8)) + "..." : name
+            nameLabel.text = name.count > 10 ? String(name.prefix(10)) + "..." : name
             nameLabel.fontSize = GameConfig.adaptiveFontSize(16)
             nameLabel.fontColor = .white
             nameLabel.horizontalAlignmentMode = .left
-            nameLabel.position = CGPoint(x: -GameConfig.scaled(60), y: 0)
+            nameLabel.position = CGPoint(x: -GameConfig.scaled(70), y: 0)
             entryNode.addChild(nameLabel)
             
             // Score with coins
@@ -121,7 +121,7 @@ class GameOverScene: SKScene {
             scoreText.fontSize = GameConfig.adaptiveFontSize(16)
             scoreText.fontColor = .white
             scoreText.horizontalAlignmentMode = .right
-            scoreText.position = CGPoint(x: GameConfig.scaled(100), y: 0)
+            scoreText.position = CGPoint(x: GameConfig.scaled(120), y: 0)
             entryNode.addChild(scoreText)
             
             entryNode.position = CGPoint(x: xOffset, y: yPos)
