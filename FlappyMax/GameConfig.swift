@@ -73,7 +73,7 @@ enum GameConfig {
         static var burger: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 1.6
-            case .iPad: return 2.4
+            case .iPad: return 2.8
             case .other: return 1.6 * deviceScaleFactor
             }
         }
@@ -180,7 +180,7 @@ enum GameConfig {
         static var poleSpacing: CGFloat {
             switch DeviceType.current {
             case .iPhone: return screenSize.width * 0.5
-            case .iPad: return screenSize.width * 0.42
+            case .iPad: return screenSize.width * 0.4
             case .other: return screenSize.width * 0.5
             }
         }
@@ -205,6 +205,12 @@ enum GameConfig {
             case .iPad: return screenSize.height - (heroBaseSize.height * 3.5)
             case .other: return screenSize.height - (heroBaseSize.height * 3.0 * deviceScaleFactor)
             }
+        }
+        
+        // Pole Width
+        static var poleWidth: CGFloat {
+            let poleTexture = SKTexture(imageNamed: "pole")
+            return poleTexture.size().width * Scales.pole
         }
         
         // Floor Configuration

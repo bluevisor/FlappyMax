@@ -63,8 +63,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal var cachedSortedPairs: [(SKNode, SKNode)] = []
 
     // MARK: - Collectable Configuration
-    internal let numberOfCoins = 10
-    internal let coinAnimationSpeed: TimeInterval = 1/30
     internal let coinTextureScale: CGFloat = GameConfig.Scales.coin
     internal let burgerTextureScale: CGFloat = GameConfig.Scales.burger
     internal let minRandomXPosition: CGFloat = 200.0
@@ -294,14 +292,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(mainScoreLabel)
 
         // Setup coin counter with sprite
-        let coinTexture = SKTexture(imageNamed: "coin_13.png")
+        let coinTexture = SKTexture(imageNamed: "coin_12.png")
         coinTexture.filteringMode = .nearest
         let coinSprite = SKSpriteNode(texture: coinTexture)
         
         // Use smaller scale for coin counter
         let coinSize = GameConfig.adaptiveSize(
             for: coinTexture,
-            baseScale: GameConfig.Scales.coinCounter,
+            baseScale: GameConfig.Scales.coinCounter * 0.5, // Make it smaller
             spriteType: .coin
         )
         coinSprite.size = coinSize

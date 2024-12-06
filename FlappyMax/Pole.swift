@@ -10,17 +10,17 @@ import GameplayKit
 
 extension GameScene {
     internal func setupPoles() {
-        print("Poles: Starting setup")
+        // print("Poles: Starting setup")
         for i in 0..<numberOfPolePairs {
-            print("Creating  pole pair \(i)")
+            // print("Creating  pole pair \(i)")
             let poleNode = createPolePair()
             let xPosition = frame.width + CGFloat(i) * poleSpacing
             poleNode.position = CGPoint(x: xPosition, y: 0)
             addChild(poleNode)
             polePairs.append(poleNode)
-            print("Pole pair \(i) created at x: \(xPosition)")
+            // print("Pole pair \(i) created at x: \(xPosition)")
         }
-        print("Poles: Created \(polePairs.count) pairs")
+        // print("Poles: Created \(polePairs.count) pairs")
     }
 
     internal func movePoles(speed: CGFloat) {

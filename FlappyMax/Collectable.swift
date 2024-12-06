@@ -64,12 +64,20 @@ extension GameScene {
             
             while !coinPlaced && attempts < maxAttempts {
                 let yPosition = CGFloat.random(in: yRange)
-                print("Attempting to place coin at: x: \(xPosition), y: \(yPosition)")
+                let randomX = CGFloat.random(in: (xPosition - poleSpacing / 2)...(xPosition + poleSpacing / 2))
+                print("Attempting to place coin at: x: \(randomX), y: \(yPosition)")
                 
-                let testPoint = CGPoint(x: xPosition, y: yPosition)
+                let floorHeight = GameConfig.Metrics.floorHeight
+                if yPosition < floorHeight {
+                    attempts += 1
+                    print("Y position below floor, trying new position")
+                    continue
+                }
+                let testPoint = CGPoint(x: randomX, y: yPosition)
                 let existingNodes = self.nodes(at: testPoint).filter { node in
-                    node.physicsBody?.categoryBitMask == PhysicsCategory.coin ||
-                    node.physicsBody?.categoryBitMask == PhysicsCategory.burger
+                    (PhysicsCategory.coin == PhysicsCategory.coin && node.physicsBody?.categoryBitMask == PhysicsCategory.coin) ||
+                    (PhysicsCategory.burger == PhysicsCategory.burger && node.physicsBody?.categoryBitMask == PhysicsCategory.burger) ||
+                    node.physicsBody?.categoryBitMask == PhysicsCategory.pole
                 }
                 
                 if existingNodes.isEmpty {
@@ -77,7 +85,7 @@ extension GameScene {
                     let coin = createCollectable(
                         textureName: "coin_01.png",
                         physicsCategory: PhysicsCategory.coin,
-                        at: CGPoint(x: xPosition, y: yPosition)
+                        at: CGPoint(x: randomX, y: yPosition)
                     )
                     coinNodes.append(coin)
                     obstacles.append(coin)
@@ -97,19 +105,27 @@ extension GameScene {
                 
                 while !burgerPlaced && attempts < maxAttempts {
                     let burgerYPosition = CGFloat.random(in: yRange)
-                    print("Attempting to place burger at: x: \(xPosition), y: \(burgerYPosition)")
+                    let randomX = CGFloat.random(in: (xPosition - poleSpacing / 2)...(xPosition + poleSpacing / 2))
+                    print("Attempting to place burger at: x: \(randomX), y: \(burgerYPosition)")
                     
-                    let testPoint = CGPoint(x: xPosition, y: burgerYPosition)
+                    let floorHeight = GameConfig.Metrics.floorHeight
+                    if burgerYPosition < floorHeight {
+                        attempts += 1
+                        print("Y position below floor, trying new position")
+                        continue
+                    }
+                    let testPoint = CGPoint(x: randomX, y: burgerYPosition)
                     let existingNodes = self.nodes(at: testPoint).filter { node in
-                        node.physicsBody?.categoryBitMask == PhysicsCategory.coin ||
-                        node.physicsBody?.categoryBitMask == PhysicsCategory.burger
+                        (PhysicsCategory.coin == PhysicsCategory.coin && node.physicsBody?.categoryBitMask == PhysicsCategory.coin) ||
+                        (PhysicsCategory.burger == PhysicsCategory.burger && node.physicsBody?.categoryBitMask == PhysicsCategory.burger) ||
+                        node.physicsBody?.categoryBitMask == PhysicsCategory.pole
                     }
                     
                     if existingNodes.isEmpty {
                         let burger = createCollectable(
                             textureName: "burger",
                             physicsCategory: PhysicsCategory.burger,
-                            at: CGPoint(x: xPosition, y: burgerYPosition)
+                            at: CGPoint(x: randomX, y: burgerYPosition)
                         )
                         burgerNodes.append(burger)
                         obstacles.append(burger)
@@ -203,9 +219,16 @@ extension GameScene {
         if collectiblesInGap.isEmpty {
             // Place a coin if available, exactly at the center
             if let coin = coinNodes.first(where: { $0.parent == nil }) {
+                let randomX = CGFloat.random(in: (gapCenterX - poleSpacing / 2)...(gapCenterX + poleSpacing / 2))
+                let yPosition = CGFloat.random(in: GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY)
+                let floorHeight = GameConfig.Metrics.floorHeight
+                if yPosition < floorHeight {
+                    print("Y position below floor, skipping placement")
+                    return
+                }
                 coin.position = CGPoint(
-                    x: gapCenterX,
-                    y: CGFloat.random(in: GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY)
+                    x: randomX,
+                    y: yPosition
                 )
                 addChild(coin)
             }
@@ -215,9 +238,16 @@ extension GameScene {
             if let rightPairIndex = sorted.firstIndex(of: rightPair) {
                 if rightPairIndex % 5 == 0 {
                     if let burger = burgerNodes.first(where: { $0.parent == nil }) {
+                        let randomX = CGFloat.random(in: (gapCenterX - poleSpacing / 2)...(gapCenterX + poleSpacing / 2))
+                        let yPosition = CGFloat.random(in: GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY)
+                        let floorHeight = GameConfig.Metrics.floorHeight
+                        if yPosition < floorHeight {
+                            print("Y position below floor, skipping placement")
+                            return
+                        }
                         burger.position = CGPoint(
-                            x: gapCenterX,
-                            y: CGFloat.random(in: GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY)
+                            x: randomX,
+                            y: yPosition
                         )
                         addChild(burger)
                     }
@@ -239,7 +269,11 @@ extension GameScene {
         let xPosition = rightmostPair.position.x + xOffset
         let yRange = GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY
         let yPosition = CGFloat.random(in: yRange)
-        
+        let floorHeight = GameConfig.Metrics.floorHeight
+        if yPosition < floorHeight {
+            print("Y position below floor, skipping placement")
+            return
+        }
         collectable.position = CGPoint(x: xPosition, y: yPosition)
     }
 

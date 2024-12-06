@@ -48,12 +48,12 @@ class GameOverScene: SKScene {
         scoreContainer.addChild(scoreLabel)
         
         // Coin Counter
-        let coinTexture = SKTexture(imageNamed: "coin_13.png")
+        let coinTexture = SKTexture(imageNamed: "coin_12.png")
         coinTexture.filteringMode = .nearest
         let coinSprite = SKSpriteNode(texture: coinTexture)
         let coinSize = GameConfig.adaptiveSize(
             for: coinTexture,
-            baseScale: GameConfig.Scales.highScoreCoin,
+            baseScale: GameConfig.Scales.highScoreCoin * 0.5, // Make it smaller
             spriteType: .coin
         )
         coinSprite.size = coinSize

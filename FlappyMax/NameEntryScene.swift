@@ -13,61 +13,66 @@ class NameEntryScene: SKScene {
     }
     
     override func didMove(to view: SKView) {
+        print("NameEntryScene did move to view")
         backgroundColor = .black
         
-        // Add faded game title
-        let titleTexture = SKTexture(imageNamed: "flappymax_title_white")
-        let titleNode = SKSpriteNode(texture: titleTexture)
-        titleNode.alpha = 0.1 // Faded appearance
-        titleNode.setScale(GameConfig.Scales.title)
-        titleNode.position = CGPoint(x: frame.midX, y: frame.midY)
-        titleNode.zPosition = -1 // Behind other elements
-        addChild(titleNode)
+        // Print scene metrics
+        print("Scene size: \(self.size)")
+        print("Scene frame: \(self.frame)")
         
         contentNode = SKNode()
+        contentNode.zPosition = 1
         
-        // New High Score Title
+        let titleTexture = SKTexture(imageNamed: "flappymax_title_white")
+        let titleNode = SKSpriteNode(texture: titleTexture)
+        titleNode.alpha = 0.1
+        titleNode.setScale(GameConfig.Scales.titleFaded)
+        titleNode.position = CGPoint(x: frame.midX, y: frame.midY)
+        titleNode.zPosition = -1
+        addChild(titleNode)
+
+        // Temporarily ignore iPad logic:
         let highScoreLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
-        highScoreLabel.text = "New High Score!"
-        highScoreLabel.fontSize = GameConfig.adaptiveFontSize(36)
-        highScoreLabel.fontColor = .white
-        highScoreLabel.position = CGPoint(x: 0, y: GameConfig.scaled(40))
+        highScoreLabel.text = "NEW HIGH SCORE!"
+        highScoreLabel.fontSize = 28
+        highScoreLabel.fontColor = .yellow
+        highScoreLabel.alpha = 1.0
+        highScoreLabel.position = CGPoint(x: frame.midX, y: frame.midY + 50)
+        highScoreLabel.zPosition = 2
         contentNode.addChild(highScoreLabel)
-        
-        // Score display
+
+        // Just place score label at midY - 50 for testing
         let scoreLabel = SKLabelNode(fontNamed: "Helvetica")
         scoreLabel.text = "Score: \(currentScore.mainScore)"
-        scoreLabel.fontSize = GameConfig.adaptiveFontSize(28)
+        scoreLabel.fontSize = 24
         scoreLabel.fontColor = .white
-        scoreLabel.position = CGPoint(x: 0, y: GameConfig.scaled(0))
+        scoreLabel.alpha = 1.0
+        scoreLabel.position = CGPoint(x: frame.midX, y: frame.midY)
+        scoreLabel.zPosition = 2
         contentNode.addChild(scoreLabel)
-        
-        // Enter Name Label
-        let enterNameLabel = SKLabelNode(fontNamed: "Helvetica")
-        enterNameLabel.text = "Enter Your Name:"
-        enterNameLabel.fontSize = GameConfig.adaptiveFontSize(24)
-        enterNameLabel.fontColor = .white
-        enterNameLabel.position = CGPoint(x: 0, y: GameConfig.scaled(-50))
-        contentNode.addChild(enterNameLabel)
-        
-        // Position the content higher to avoid keyboard
-        contentNode.position = CGPoint(x: frame.midX, y: frame.height * 0.8)
+
+        let coinsLabel = SKLabelNode(fontNamed: "Helvetica")
+        coinsLabel.text = "Coins: \(currentScore.coins)"
+        coinsLabel.fontSize = 24
+        coinsLabel.fontColor = .white
+        coinsLabel.alpha = 1.0
+        coinsLabel.position = CGPoint(x: frame.midX, y: frame.midY - 50)
+        coinsLabel.zPosition = 2
+        contentNode.addChild(coinsLabel)
+
         addChild(contentNode)
         
-        // Add text field
         createTextField()
         
-        // Register for keyboard notifications
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(keyboardWillShow),
+            selector: #selector(keyboardWillShow(_:)),
             name: UIResponder.keyboardWillShowNotification,
             object: nil
         )
-        
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(keyboardWillHide),
+            selector: #selector(keyboardWillHide(_:)),
             name: UIResponder.keyboardWillHideNotification,
             object: nil
         )
@@ -89,7 +94,7 @@ class NameEntryScene: SKScene {
         
         let textField = UITextField(frame: CGRect(
             x: view.frame.width * 0.2,
-            y: view.frame.height * 0.5,
+            y: DeviceType.current == .iPad ? view.frame.height * 0.45 : view.frame.height * 0.5,
             width: view.frame.width * 0.6,
             height: 40
         ))
@@ -97,7 +102,7 @@ class NameEntryScene: SKScene {
         textField.backgroundColor = .white
         textField.textColor = .black
         textField.textAlignment = .center
-        textField.font = UIFont(name: "Helvetica", size: 20)
+        textField.font = UIFont(name: "Helvetica", size: DeviceType.current == .iPad ? 24 : 20)
         textField.placeholder = "Enter name (max 10)"
         textField.delegate = self
         textField.returnKeyType = .done
@@ -117,15 +122,6 @@ class NameEntryScene: SKScene {
             existingField.resignFirstResponder()
             existingField.removeFromSuperview()
             self.nameField = nil
-        }
-        
-        // Also clean up any other text fields that might be in the view
-        guard let view = view else { return }
-        for subview in view.subviews {
-            if let textField = subview as? UITextField {
-                textField.resignFirstResponder()
-                textField.removeFromSuperview()
-            }
         }
     }
     
@@ -152,7 +148,7 @@ class NameEntryScene: SKScene {
         
         UIView.animate(withDuration: 0.3) {
             textField.frame.origin.y = view.frame.height * 0.5 // Reset position
-            self.contentNode.position.y = self.frame.height * 0.8 // Reset content position
+            self.contentNode.position.y = 0 // Reset content position
         }
     }
     
@@ -173,8 +169,10 @@ class NameEntryScene: SKScene {
         // Update leaderboard
         leaderboardManager.updateLeaderboard(with: finalScore)
         
-        // Transition to game over scene
-        transitionToGameOver(with: finalScore)
+        // Delay the transition to game over scene
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.transitionToGameOver(with: finalScore)
+        }
         
         // Cleanup text field
         cleanupTextField()
@@ -195,6 +193,7 @@ class NameEntryScene: SKScene {
         // Ensure we're on the main thread for UI updates
         DispatchQueue.main.async {
             self.view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
+            print("Transitioned to game over scene")
         }
     }
     
