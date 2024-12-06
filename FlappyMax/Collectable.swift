@@ -134,24 +134,22 @@ extension GameScene {
         let texture = SKTexture(imageNamed: textureName)
         texture.filteringMode = .nearest
         
-        // Use GameConfig scales for coin and burger sizes
-        let scale = physicsCategory == PhysicsCategory.coin ? GameConfig.Scales.coin : GameConfig.Scales.burger
+        let scale = (physicsCategory == PhysicsCategory.coin) ? GameConfig.Scales.coin : GameConfig.Scales.burger
         let size = CGSize(
             width: texture.size().width * scale,
             height: texture.size().height * scale
         )
-        
+
         let sprite = SKSpriteNode(texture: texture, size: size)
         sprite.position = position
-        
-        // Add physics body for both collision detection and hero collection
         sprite.physicsBody = SKPhysicsBody(circleOfRadius: size.width / 2)
-        sprite.physicsBody?.isDynamic = false  // Static body, won't move
+        sprite.physicsBody?.isDynamic = false
         sprite.physicsBody?.categoryBitMask = physicsCategory
-        sprite.physicsBody?.collisionBitMask = 0  // Don't physically collide with anything
-        sprite.physicsBody?.contactTestBitMask = PhysicsCategory.hero  // Only detect hero contact
+        sprite.physicsBody?.collisionBitMask = 0
+        sprite.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+
+        sprite.name = physicsCategory == PhysicsCategory.coin ? "coin" : "burger"
         
-        // Add coin animation if this is a coin
         if physicsCategory == PhysicsCategory.coin {
             var frames: [SKTexture] = []
             for i in 1...15 {
@@ -225,22 +223,6 @@ extension GameScene {
                     }
                 }
             }
-        }
-    }
-
-    private func resetCollectable(_ collectable: SKSpriteNode) {
-        collectable.removeFromParent()
-        
-        if !obstacles.contains(collectable) {
-            obstacles.append(collectable)
-        }
-
-        if collectable.physicsBody == nil {
-            collectable.physicsBody = SKPhysicsBody(circleOfRadius: collectable.size.width / 2)
-            collectable.physicsBody?.isDynamic = false
-            collectable.physicsBody?.categoryBitMask = coinNodes.contains(collectable) ? PhysicsCategory.coin : PhysicsCategory.burger
-            collectable.physicsBody?.contactTestBitMask = PhysicsCategory.hero
-            collectable.physicsBody?.collisionBitMask = 0
         }
     }
 

@@ -55,7 +55,7 @@ class NameEntryScene: SKScene {
         addChild(contentNode)
         
         // Add text field
-        setupTextField()
+        createTextField()
         
         // Register for keyboard notifications
         NotificationCenter.default.addObserver(
@@ -73,16 +73,24 @@ class NameEntryScene: SKScene {
         )
     }
     
-    private func setupTextField() {
+    private func createTextField() {
+        // Clean up any existing text field first
+        cleanupTextField()
+        
         guard let view = view else { return }
         
-        // Calculate text field width based on device
-        let textFieldWidth = min(view.frame.width * 0.6, 300.0)
+        // Check for any existing text fields in the view and remove them
+        for subview in view.subviews {
+            if let textField = subview as? UITextField {
+                textField.resignFirstResponder()
+                textField.removeFromSuperview()
+            }
+        }
         
         let textField = UITextField(frame: CGRect(
-            x: view.frame.midX - textFieldWidth/2,
-            y: view.frame.height * 0.4, // Position higher in the screen
-            width: textFieldWidth,
+            x: view.frame.width * 0.2,
+            y: view.frame.height * 0.5,
+            width: view.frame.width * 0.6,
             height: 40
         ))
         
@@ -101,6 +109,24 @@ class NameEntryScene: SKScene {
         textField.becomeFirstResponder()
         
         self.nameField = textField
+    }
+    
+    private func cleanupTextField() {
+        // Clean up the stored text field reference
+        if let existingField = nameField {
+            existingField.resignFirstResponder()
+            existingField.removeFromSuperview()
+            self.nameField = nil
+        }
+        
+        // Also clean up any other text fields that might be in the view
+        guard let view = view else { return }
+        for subview in view.subviews {
+            if let textField = subview as? UITextField {
+                textField.resignFirstResponder()
+                textField.removeFromSuperview()
+            }
+        }
     }
     
     @objc private func keyboardWillShow(_ notification: Notification) {
@@ -125,7 +151,7 @@ class NameEntryScene: SKScene {
               let textField = nameField else { return }
         
         UIView.animate(withDuration: 0.3) {
-            textField.frame.origin.y = view.frame.height * 0.4 // Reset position
+            textField.frame.origin.y = view.frame.height * 0.5 // Reset position
             self.contentNode.position.y = self.frame.height * 0.8 // Reset content position
         }
     }
@@ -154,40 +180,30 @@ class NameEntryScene: SKScene {
         cleanupTextField()
     }
 
-    private func cleanupTextField() {
-        guard let textField = nameField else { return }
-        
-        print("Cleaning up text field...")
-        textField.resignFirstResponder()
-        textField.removeFromSuperview()
-        self.nameField = nil
-    }
-    
     private func transitionToGameOver(with score: ScoreEntry) {
         print("Starting transition to game over scene")
-        // Clean up text field
-        cleanupTextField()
         
-        // Wait a brief moment to ensure cleanup is complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            guard let self = self else { return }
-            
-            print("Performing final cleanup before transition")
-            // Double check cleanup
-            self.cleanupTextField()
-            
-            print("Creating and presenting game over scene")
-            // Create and present game over scene
-            let gameOverScene = GameOverScene(size: self.size)
-            gameOverScene.currentScore = score
-            gameOverScene.scaleMode = .aspectFill
+        // Clean up text field and observers before transitioning
+        cleanupTextField()
+        NotificationCenter.default.removeObserver(self)
+        
+        // Create and configure the game over scene
+        let gameOverScene = GameOverScene(size: self.size)
+        gameOverScene.scaleMode = .aspectFill
+        gameOverScene.currentScore = score
+        
+        // Ensure we're on the main thread for UI updates
+        DispatchQueue.main.async {
             self.view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
         }
     }
     
     override func willMove(from view: SKView) {
-        NotificationCenter.default.removeObserver(self)
+        super.willMove(from: view)
         cleanupTextField()
+        
+        // Remove keyboard observers
+        NotificationCenter.default.removeObserver(self)
     }
     
     override func removeFromParent() {
@@ -204,25 +220,23 @@ extension NameEntryScene: UITextFieldDelegate {
     }
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        handleUserInput() // Process the input and cleanup
-    
-        // Transition to game over scene if necessary
-        if let scoreEntry = createScoreEntry() {
-            transitionToGameOver(with: scoreEntry)
-        }
-    
-        return true // Dismiss the keyboard
-    }
-    
-    private func createScoreEntry() -> ScoreEntry? {
-        guard let textField = nameField else { return nil }
-        let name = textField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Anonymous"
+        let name = textField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let finalName = name.isEmpty ? "Anonymous" : name
         
-        return ScoreEntry(
+        // Create new score entry with the entered name
+        let finalScore = ScoreEntry(
             mainScore: currentScore.mainScore,
             coins: currentScore.coins,
-            name: name.isEmpty ? "Anonymous" : name,
+            name: finalName,
             date: Date()
         )
+        
+        // Update leaderboard with the new score
+        leaderboardManager.updateLeaderboard(with: finalScore)
+        
+        // Transition to game over scene
+        transitionToGameOver(with: finalScore)
+        
+        return true
     }
-} 
+}

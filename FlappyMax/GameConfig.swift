@@ -246,7 +246,7 @@ enum GameConfig {
         static var gravity: CGFloat {
             switch DeviceType.current {
             case .iPhone: return -7.5
-            case .iPad: return -9.0  // Slightly lower gravity for iPad's larger screen
+            case .iPad: return -9.5
             case .other: return -9.0 * deviceScaleFactor
             }
         }
@@ -254,7 +254,7 @@ enum GameConfig {
         static var flapImpulse: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 42.0
-            case .iPad: return 128.0
+            case .iPad: return 142.0
             case .other: return 42.0 * deviceScaleFactor
             }
         }
@@ -262,7 +262,7 @@ enum GameConfig {
         static var gameSpeed: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 7.0
-            case .iPad: return 9.5
+            case .iPad: return 10.0
             case .other: return 7.0 * deviceScaleFactor
             }
         }

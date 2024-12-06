@@ -239,29 +239,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     func collect(_ collectableNode: SKSpriteNode) {
-        if coinNodes.contains(collectableNode) {
+        guard let name = collectableNode.name else { return }
+
+        if name == "coin" {
             coinScore += 1
             coinScoreLabel.text = "\(coinScore)"
             playSoundEffect(from: coinSoundEffects)
-            collectableNode.name = "collected"
-            // Reset and reuse the node instead of removing
-            resetCollectable(collectableNode)
-        } else if burgerNodes.contains(collectableNode) {
+            collectableNode.removeFromParent()
+            
+            // Add back to obstacles array for reuse
+            if !obstacles.contains(collectableNode) {
+                obstacles.append(collectableNode)
+            }
+        } else if name == "burger" {
             burgerScore += 1
-            currentStamina = min(maxStamina, currentStamina + staminaReplenishment)  // Replenish stamina
-            updateStaminaBar()  // Update the stamina bar
+            currentStamina = min(maxStamina, currentStamina + staminaReplenishment)
+            updateStaminaBar()
             playSoundEffect(from: burgerSoundEffects)
-            collectableNode.name = "collected"
-            // Reset and reuse the node instead of removing
-            resetCollectable(collectableNode)
+            collectableNode.removeFromParent()
+            
+            // Add back to obstacles array for reuse
+            if !obstacles.contains(collectableNode) {
+                obstacles.append(collectableNode)
+            }
         }
     }
 
     private func resetCollectable(_ collectable: SKSpriteNode) {
-        // Reset properties and reposition for reuse
-        collectable.position.x = frame.width + CGFloat.random(in: minRandomXPosition...maxRandomXPosition)
         collectable.removeFromParent()
+        
+        // Add back to obstacles array for reuse if not already there
+        if !obstacles.contains(collectable) {
+            obstacles.append(collectable)
+        }
+        
+        // Add back to scene at new position
         addChild(collectable)
+        
+        // Reset position
+        collectable.position.x = frame.width + CGFloat.random(in: minRandomXPosition...maxRandomXPosition)
     }
 
     private func setupLabels() {
