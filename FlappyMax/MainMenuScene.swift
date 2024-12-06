@@ -31,40 +31,46 @@ class MainMenuScene: SKScene {
         print("=========================\n")
         
         preloadAudio()
+        
+        // Create background first to avoid frame drops
         let background = BackgroundManager.shared.createBackground(size: self.size)
         addChild(background)
-
-        let ifIphone = UIDevice.current.userInterfaceIdiom == .phone
+        
+        // Cache common values
+        let ifIphone = DeviceType.current == .iPhone
         let titleScale: CGFloat = ifIphone ? 0.4 : 0.6
         let titlePositionOffset: CGFloat = ifIphone ? 69 : 130
         let titleOutScale: CGFloat = ifIphone ? 0.6 : 0.75
+        let titlePosition = CGPoint(x: frame.midX, y: frame.midY + titlePositionOffset)
         let versionLabelFontSize: CGFloat = ifIphone ? 18 : 22
         let versionLabelPositionOffset: CGFloat = ifIphone ? -40 : -50
         let startButtonPositionOffset: CGFloat = ifIphone ? -110 : -220
         let startButtonFontSize: CGFloat = ifIphone ? 42 : 52
         let copyrightLabelFontSize: CGFloat = ifIphone ? 12 : 14
-
+        
+        // Create and cache textures
+        let titleTexture = SKTexture(imageNamed: "flappymax_title_white")
+        
         // First title node for the initial animation
-        let titleIn = SKSpriteNode(texture: SKTexture(imageNamed: "flappymax_title_white"))
-        titleIn.position = CGPoint(x: frame.midX, y: frame.midY + titlePositionOffset)
+        let titleIn = SKSpriteNode(texture: titleTexture)
+        titleIn.position = titlePosition
         titleIn.setScale(5.0)
         titleIn.alpha = 0.0
         addChild(titleIn)
 
-        // Title in animation
+        // Second title node for the exit animation (reuse texture)
+        let titleOut = SKSpriteNode(texture: titleTexture)
+        titleOut.position = titlePosition
+        titleOut.setScale(titleScale)
+        titleOut.alpha = 0.0
+        addChild(titleOut)
+        
+        // Cache animations
         let fadeIn = SKAction.fadeIn(withDuration: 1.5)
         let scaleDown = SKAction.scale(to: titleScale, duration: 1.5)
         let titleInAnimation = SKAction.group([fadeIn, scaleDown])
         titleInAnimation.timingMode = .easeIn
 
-        // Second title node for the exit animation
-        let titleOut = SKSpriteNode(texture: SKTexture(imageNamed: "flappymax_title_white"))
-        titleOut.position = titleIn.position
-        titleOut.setScale(titleScale)
-        titleOut.alpha = 0.0
-        addChild(titleOut)
-
-        // Title out animation: fade out and scale up
         let fadeOut = SKAction.fadeOut(withDuration: 0.6)
         let scaleUp = SKAction.scale(to: titleOutScale, duration: 0.6)
         let titleOutAnimation = SKAction.group([fadeOut, scaleUp])

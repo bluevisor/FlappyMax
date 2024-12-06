@@ -165,8 +165,13 @@ class NameEntryScene: SKScene {
     // MARK: - Cleanup
     override func willMove(from view: SKView) {
         super.willMove(from: view)
+        
+        // Ensure text field is removed when leaving the scene
+        nameField?.resignFirstResponder()
         nameField?.removeFromSuperview()
         nameField = nil
+        
+        // Remove keyboard observers
         NotificationCenter.default.removeObserver(self)
     }
 }
@@ -186,6 +191,11 @@ extension NameEntryScene: UITextFieldDelegate {
         
         // Update leaderboard
         leaderboardManager.updateLeaderboard(with: finalScore)
+        
+        // Remove the text field from the view hierarchy
+        textField.resignFirstResponder()
+        textField.removeFromSuperview()
+        nameField = nil
         
         // Transition to game over scene
         let gameOverScene = GameOverScene(size: size)
