@@ -130,17 +130,37 @@ class NameEntryScene: SKScene {
         }
     }
     
+    private func handleUserInput() {
+        guard let textField = nameField else { return }
+        
+        let userName = textField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Anonymous"
+        let finalName = userName.isEmpty ? "Anonymous" : userName
+        
+        // Create new score entry
+        let finalScore = ScoreEntry(
+            mainScore: currentScore.mainScore,
+            coins: currentScore.coins,
+            name: finalName,
+            date: Date()
+        )
+        
+        // Update leaderboard
+        leaderboardManager.updateLeaderboard(with: finalScore)
+        
+        // Transition to game over scene
+        transitionToGameOver(with: finalScore)
+        
+        // Cleanup text field
+        cleanupTextField()
+    }
+
     private func cleanupTextField() {
+        guard let textField = nameField else { return }
+        
         print("Cleaning up text field...")
-        // Force resign first responder on main thread
-        DispatchQueue.main.async { [weak self] in
-            print("Resigning first responder...")
-            self?.nameField?.resignFirstResponder()
-            // Remove and nil out the text field in the same async block
-            print("Removing text field from superview...")
-            self?.nameField?.removeFromSuperview()
-            self?.nameField = nil
-        }
+        textField.resignFirstResponder()
+        textField.removeFromSuperview()
+        self.nameField = nil
     }
     
     private func transitionToGameOver(with score: ScoreEntry) {
@@ -184,25 +204,25 @@ extension NameEntryScene: UITextFieldDelegate {
     }
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        // Clean up text field immediately
-        cleanupTextField()
+        handleUserInput() // Process the input and cleanup
+    
+        // Transition to game over scene if necessary
+        if let scoreEntry = createScoreEntry() {
+            transitionToGameOver(with: scoreEntry)
+        }
+    
+        return true // Dismiss the keyboard
+    }
+    
+    private func createScoreEntry() -> ScoreEntry? {
+        guard let textField = nameField else { return nil }
+        let name = textField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Anonymous"
         
-        let name = textField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        
-        // Create new score entry with name
-        let finalScore = ScoreEntry(
+        return ScoreEntry(
             mainScore: currentScore.mainScore,
             coins: currentScore.coins,
-            name: name.isEmpty ? "Unknown" : name,
+            name: name.isEmpty ? "Anonymous" : name,
             date: Date()
         )
-        
-        // Update leaderboard
-        leaderboardManager.updateLeaderboard(with: finalScore)
-        
-        // Transition to game over scene with cleanup
-        transitionToGameOver(with: finalScore)
-        
-        return true
     }
 } 

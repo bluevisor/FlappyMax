@@ -90,8 +90,8 @@ class GameOverScene: SKScene {
         for (index, score) in leaderboard.prefix(10).enumerated() {
             let column = index / entriesPerColumn
             let row = index % entriesPerColumn
-            let xOffset = column == 0 ? -GameConfig.scaled(140) : GameConfig.scaled(140)
-            let yPos = GameConfig.scaled(-50 - CGFloat(row * 25))
+            let xOffset = column == 0 ? -GameConfig.scaled(145) : GameConfig.scaled(145)
+            let yPos = GameConfig.scaled(-55 - CGFloat(row * 25))
             
             // Score entry
             let entryNode = SKNode()
@@ -102,7 +102,7 @@ class GameOverScene: SKScene {
             rankLabel.fontSize = GameConfig.adaptiveFontSize(16)
             rankLabel.fontColor = .white
             rankLabel.horizontalAlignmentMode = .right
-            rankLabel.position = CGPoint(x: -GameConfig.scaled(80), y: 0)
+            rankLabel.position = CGPoint(x: -GameConfig.scaled(100), y: 0)
             entryNode.addChild(rankLabel)
             
             // Name (truncate if too long)
@@ -112,16 +112,16 @@ class GameOverScene: SKScene {
             nameLabel.fontSize = GameConfig.adaptiveFontSize(16)
             nameLabel.fontColor = .white
             nameLabel.horizontalAlignmentMode = .left
-            nameLabel.position = CGPoint(x: -GameConfig.scaled(70), y: 0)
+            nameLabel.position = CGPoint(x: -GameConfig.scaled(90), y: 0)
             entryNode.addChild(nameLabel)
             
             // Score with coins
             let scoreText = SKLabelNode(fontNamed: "Helvetica")
-            scoreText.text = "\(score.mainScore) (\(score.coins)🪙)"
+            scoreText.text = "\(score.mainScore) (\(score.coins))"
             scoreText.fontSize = GameConfig.adaptiveFontSize(16)
             scoreText.fontColor = .white
             scoreText.horizontalAlignmentMode = .right
-            scoreText.position = CGPoint(x: GameConfig.scaled(120), y: 0)
+            scoreText.position = CGPoint(x: GameConfig.scaled(130), y: 0)
             entryNode.addChild(scoreText)
             
             entryNode.position = CGPoint(x: xOffset, y: yPos)

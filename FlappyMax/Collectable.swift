@@ -54,9 +54,7 @@ extension GameScene {
             print("Processing pair \(i): first pole at \(firstPolePair.position), second pole at \(secondPolePair.position)")
             
             // Calculate a position between the pole pairs
-            let distance = abs(secondPolePair.position.x - firstPolePair.position.x)
-            let xOffset = distance * 0.5 // Exactly halfway between poles
-            let xPosition = firstPolePair.position.x + xOffset
+            let xPosition = (firstPolePair.position.x + secondPolePair.position.x) * 0.5
             let yRange = GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY
             
             // Try multiple positions for coin placement to avoid overlap

@@ -39,7 +39,7 @@ enum GameConfig {
         // Get device-specific sprite scales
         static var hero: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 1.3
+            case .iPhone: return 1.2
             case .iPad: return 1.25
             case .other: return 1.25 * deviceScaleFactor
             }
@@ -48,7 +48,7 @@ enum GameConfig {
         // Scale factor for pole sprites based on device type
         static var pole: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 3.8
+            case .iPhone: return 3.2
             case .iPad: return 3.8
             case .other: return 3.8 * deviceScaleFactor
             }
@@ -171,7 +171,7 @@ enum GameConfig {
         // Game Layout - All relative to hero size and screen
         static var polePairGap: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return heroBaseSize.height * 3.5
+            case .iPhone: return heroBaseSize.height * 3.2
             case .iPad: return heroBaseSize.height * 3.5
             case .other: return heroBaseSize.height * 3.5 * deviceScaleFactor
             }
@@ -242,15 +242,10 @@ enum GameConfig {
     
     // MARK: - Physics Parameters
     struct Physics {
-        // // Base values for iPhone Pro Max
-        // static let baseGravity: CGFloat = -9.0
-        // static let baseFlapImpulse: CGFloat = 52.0
-        // static let baseSpeed: CGFloat = 6.0
-        
         // Device-specific physics adjustments
         static var gravity: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return -8.0
+            case .iPhone: return -7.5
             case .iPad: return -9.0  // Slightly lower gravity for iPad's larger screen
             case .other: return -9.0 * deviceScaleFactor
             }
@@ -258,16 +253,16 @@ enum GameConfig {
         
         static var flapImpulse: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 52.0
+            case .iPhone: return 42.0
             case .iPad: return 128.0
-            case .other: return 52.0 * deviceScaleFactor
+            case .other: return 42.0 * deviceScaleFactor
             }
         }
         
         static var gameSpeed: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 7.0
-            case .iPad: return 9.5  // Faster on iPad due to wider screen
+            case .iPad: return 9.5
             case .other: return 7.0 * deviceScaleFactor
             }
         }
