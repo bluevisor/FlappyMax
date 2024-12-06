@@ -32,7 +32,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "232"
             endingLineNumber = "232"
-            landmarkName = "collect(_:)"
+            landmarkName = "setupLabels()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

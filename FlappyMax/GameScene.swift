@@ -36,7 +36,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // MARK: - Labels
     internal var mainScoreLabel: SKLabelNode!
     internal var coinScoreLabel: SKLabelNode!
-    internal var burgerScoreLabel: SKLabelNode!
     internal var mainScore = 0
     internal var coinScore = 0
     internal var burgerScore = 0
@@ -182,19 +181,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     mainScoreLabel.text = "\(mainScore)"
                     scoreZoneNode.physicsBody = nil
                 }
-            case PhysicsCategory.coin:
+            case PhysicsCategory.coin, PhysicsCategory.burger:
                 if let collectableNode = otherBody.node as? SKSpriteNode {
                     collect(collectableNode)
                 }
-
-            case PhysicsCategory.burger:
-                currentStamina = min(currentStamina + staminaReplenishment, maxStamina)
-                updateStaminaBar()
-
             case PhysicsCategory.pole, PhysicsCategory.floor: // Game over
                 gameOver = true
                 handleGameOver()
-
             default:
                 break
         }
@@ -220,23 +213,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if coinNodes.contains(collectableNode) {
             coinScore += 1
             coinScoreLabel.text = "Coins: \(coinScore)"
-            coinNodes.removeAll { $0 == collectableNode }
             playSoundEffect(from: coinSoundEffects)
+            collectableNode.name = "collected"
+            collectableNode.removeFromParent()
         } else if burgerNodes.contains(collectableNode) {
-            stamina = min(stamina + staminaReplenishment, 100.0)
-            burgerNodes.removeAll { $0 == collectableNode }
+            burgerScore += 1
             playSoundEffect(from: burgerSoundEffects)
+            collectableNode.name = "collected"
+            collectableNode.removeFromParent()
         }
-
-        obstacles.removeAll { $0 == collectableNode }
-        collectableNode.removeFromParent()
     }
 
     private func setupLabels() {
         // Setup the main score label
         mainScoreLabel = SKLabelNode(fontNamed: "Helvetica")
         mainScoreLabel.position = CGPoint(
-            x: frame.midX,
+            x: frame.width / 2,
             y: frame.height - screenMargin * 1.2
         )
         mainScoreLabel.fontSize = 100
@@ -248,26 +240,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Setup the coin score label
         coinScoreLabel = SKLabelNode(fontNamed: "Helvetica")
         coinScoreLabel.position = CGPoint(
-            x: frame.width - screenMargin * 1.0,
-            y: frame.height - screenMargin * 0.7
+            x: frame.width - screenMargin * 1.5,
+            y: frame.height - screenMargin
         )
         coinScoreLabel.fontSize = 32
         coinScoreLabel.fontColor = .white
         coinScoreLabel.text = "Coins: 0"
         coinScoreLabel.zPosition = 100
         addChild(coinScoreLabel)
-
-        // // Setup the burger score label
-        // burgerScoreLabel = SKLabelNode(fontNamed: "Helvetica")
-        // burgerScoreLabel.position = CGPoint(
-        //     x: screenMargin * 1.5,
-        //     y: frame.height - screenMargin
-        // )
-        // burgerScoreLabel.fontSize = 32
-        // burgerScoreLabel.fontColor = .white
-        // burgerScoreLabel.text = "Burgers: 0"
-        // burgerScoreLabel.zPosition = 100
-        // addChild(burgerScoreLabel)
     }
 
     func setupStaminaBar() {

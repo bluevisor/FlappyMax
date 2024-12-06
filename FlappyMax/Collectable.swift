@@ -33,10 +33,13 @@ extension GameScene {
 
             // Position a burger along this curve
             let burger = BurgerCollectable(staminaReplenishment: 25.0)
+            addChild(burger)  // Add burger to scene
             UtilityFunctions.placeCollectableOnCurve(collectable: burger, curvePath: curvePath, deviation: 20.0)
             if !isOverlapping(collectable: burger) {
                 burgerNodes.append(burger)
                 obstacles.append(burger)
+            } else {
+                burger.removeFromParent()  // Remove if overlapping
             }
         }
     }
@@ -80,27 +83,31 @@ extension GameScene {
     func moveCollectibles(speed: CGFloat) {
         guard !gameOver else { return }
         for collectable in coinNodes + burgerNodes {
-
-            if collectable.parent == nil {
-                continue
+            // Move the collectable if it's in the scene
+            if collectable.parent != nil {
+                collectable.position.x -= speed
             }
 
-            collectable.position.x -= speed
-
-            // Reset coin position if it moves off-screen
-            if collectable.position.x < -collectable.size.width {
-                if let index = obstacles.firstIndex(of: collectable) {
-                    obstacles.remove(at: index)
+            // Check if we need to reset the collectable
+            if collectable.position.x < -collectable.size.width || collectable.parent == nil {
+                // Reset position and add back to scene
+                collectable.name = nil  // Clear collected state
+                placeCollectable(collectable: collectable)
+                
+                if collectable.parent == nil {
+                    addChild(collectable)
+                }
+                
+                if !obstacles.contains(collectable) {
+                    obstacles.append(collectable)
                 }
 
-                placeCollectable(collectable: collectable)
-                obstacles.append(collectable)
-
+                // Recreate physics body if needed
                 if collectable.physicsBody == nil {
                     collectable.physicsBody = SKPhysicsBody(circleOfRadius: collectable.size.width / 2)
                     collectable.physicsBody?.isDynamic = false
-
-                if coinNodes.contains(collectable) {
+                    
+                    if coinNodes.contains(collectable) {
                         collectable.physicsBody?.categoryBitMask = PhysicsCategory.coin
                     } else if burgerNodes.contains(collectable) {
                         collectable.physicsBody?.categoryBitMask = PhysicsCategory.burger
@@ -172,7 +179,11 @@ class BurgerCollectable: SKSpriteNode {
     init(staminaReplenishment: CGFloat = 25.0) {
         self.staminaReplenishment = staminaReplenishment
         let texture = SKTexture(imageNamed: "burger")
-        super.init(texture: texture, color: .clear, size: CGSize(width: 40, height: 40))
+        texture.filteringMode = .nearest  // Use nearest neighbor filtering
+        // Make burger 4x bigger
+        let size = CGSize(width: 80, height: 80)
+        super.init(texture: texture, color: .clear, size: size)
+        self.zPosition = 1  // Same as hero to be visible
         self.setupPhysics()
     }
 
