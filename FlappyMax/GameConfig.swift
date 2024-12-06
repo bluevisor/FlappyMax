@@ -35,21 +35,88 @@ enum GameConfig {
     
     // MARK: - Sprite Scales
     struct Scales {
-        // Character and Obstacles
-        static let hero: CGFloat = 1.25
-        static let pole: CGFloat = 3.5
-        static let floor: CGFloat = 4.0
+        // Get device-specific sprite scales
+        static var hero: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.3
+            case .iPad: return 1.25
+            case .other: return 1.25 * deviceScaleFactor
+            }
+        }
         
-        // Collectibles
-        static let coin: CGFloat = 0.4
-        static let burger: CGFloat = 1.5
+        // Scale factor for pole sprites based on device type
+        static var pole: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 3.8
+            case .iPad: return 3.8
+            case .other: return 3.8 * deviceScaleFactor
+            }
+        }
+        
+        static var floor: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 4.0
+            case .iPad: return 5.5
+            case .other: return 4.0 * deviceScaleFactor
+            }
+        }
+        
+        static var coin: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 0.4
+            case .iPad: return 0.4
+            case .other: return 0.4 * deviceScaleFactor
+            }
+        }
+        
+        static var burger: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.6
+            case .iPad: return 1.6
+            case .other: return 1.6 * deviceScaleFactor
+            }
+        }
         
         // UI Elements
-        static let label: CGFloat = 1.0
-        static let title: CGFloat = 0.5  // Game title scale in menu and game over
-        static let titleFaded: CGFloat = 0.4  // Faded background title scale
-        static let coinCounter: CGFloat = 0.5  // Coin counter in HUD
-        static let highScoreCoin: CGFloat = 0.4  // Coins in high score list
+        static var label: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.0
+            case .iPad: return 1.4
+            case .other: return 1.0 * deviceScaleFactor
+            }
+        }
+        
+        static var title: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 0.5
+            case .iPad: return 0.7
+            case .other: return 0.5 * deviceScaleFactor
+            }
+        }
+        
+        static var titleFaded: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 0.4
+            case .iPad: return 0.6
+            case .other: return 0.4 * deviceScaleFactor
+            }
+        }
+        
+        static var coinCounter: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 0.5
+            case .iPad: return 0.7
+            case .other: return 0.5 * deviceScaleFactor
+            }
+        }
+        
+        static var highScoreCoin: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 0.4
+            case .iPad: return 0.6
+            case .other: return 0.4 * deviceScaleFactor
+            }
+        }
     }
     
     // MARK: - Game Metrics
@@ -87,7 +154,11 @@ enum GameConfig {
         static var topMargin: CGFloat {
             let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
             let safeAreaInset = scene?.windows.first?.safeAreaInsets.top ?? 0
-            return max(safeAreaInset + 20, screenSize.height * 0.1)  // At least 20pt below safe area
+            switch DeviceType.current {
+            case .iPhone: return max(safeAreaInset + 20, screenSize.height * 0.1)
+            case .iPad: return max(safeAreaInset + 40, screenSize.height * 0.08)
+            case .other: return max(safeAreaInset + 20, screenSize.height * 0.1)
+            }
         }
         
         static var bottomMargin: CGFloat {
@@ -98,13 +169,19 @@ enum GameConfig {
         
         // Game Layout - All relative to hero size and screen
         static var polePairGap: CGFloat {
-            // Gap is 3.5x hero height
-            return heroBaseSize.height * 3.5
+            switch DeviceType.current {
+            case .iPhone: return heroBaseSize.height * 3.5
+            case .iPad: return heroBaseSize.height * 3.5
+            case .other: return heroBaseSize.height * 3.5 * deviceScaleFactor
+            }
         }
         
         static var poleSpacing: CGFloat {
-            // Spacing is 75% of screen width
-            return screenSize.width * 0.5
+            switch DeviceType.current {
+            case .iPhone: return screenSize.width * 0.6
+            case .iPad: return screenSize.width * 0.5
+            case .other: return screenSize.width * 0.6
+            }
         }
         
         static var scoreZoneWidth: CGFloat {
@@ -114,12 +191,19 @@ enum GameConfig {
         
         // Pole Positioning
         static var polePairMinY: CGFloat {
-            return bottomMargin + (polePairGap / 2)
+            switch DeviceType.current {
+            case .iPhone: return heroBaseSize.height * 2.0
+            case .iPad: return heroBaseSize.height * 2.5
+            case .other: return heroBaseSize.height * 2.0 * deviceScaleFactor
+            }
         }
         
         static var polePairMaxY: CGFloat {
-            // Maximum Y is screen height minus top margin
-            return screenSize.height - topMargin - (polePairGap / 2)
+            switch DeviceType.current {
+            case .iPhone: return screenSize.height - (heroBaseSize.height * 2.0)
+            case .iPad: return screenSize.height - (heroBaseSize.height * 2.5)
+            case .other: return screenSize.height - (heroBaseSize.height * 2.0 * deviceScaleFactor)
+            }
         }
         
         // Floor Configuration
@@ -135,7 +219,11 @@ enum GameConfig {
         static var screenMargin: CGFloat {
             let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
             let safeAreaInset = scene?.windows.first?.safeAreaInsets.left ?? 0
-            return max(safeAreaInset + 20, screenSize.width * 0.1)  // At least 20pt from safe area
+            switch DeviceType.current {
+            case .iPhone: return max(safeAreaInset + 20, screenSize.width * 0.1)
+            case .iPad: return max(safeAreaInset + 40, screenSize.width * 0.08)
+            case .other: return max(safeAreaInset + 20, screenSize.width * 0.1)
+            }
         }
         
         // Animation
@@ -153,33 +241,33 @@ enum GameConfig {
     
     // MARK: - Physics Parameters
     struct Physics {
-        // Base values for iPhone Pro Max
-        static let baseGravity: CGFloat = -9.0
-        static let baseFlapImpulse: CGFloat = 52.0
-        static let baseSpeed: CGFloat = 6.0
+        // // Base values for iPhone Pro Max
+        // static let baseGravity: CGFloat = -9.0
+        // static let baseFlapImpulse: CGFloat = 52.0
+        // static let baseSpeed: CGFloat = 6.0
         
         // Device-specific physics adjustments
         static var gravity: CGFloat {
             switch DeviceType.current {
-            case .iPhone:  return baseGravity
-            case .iPad:    return baseGravity 
-            case .other:   return baseGravity
+            case .iPhone: return -8.0
+            case .iPad: return -9.0  // Slightly lower gravity for iPad's larger screen
+            case .other: return -9.0 * deviceScaleFactor
             }
         }
         
         static var flapImpulse: CGFloat {
             switch DeviceType.current {
-            case .iPhone:  return baseFlapImpulse
-            case .iPad:    return baseFlapImpulse * 2.5
-            case .other:   return baseFlapImpulse
+            case .iPhone: return 52.0
+            case .iPad: return 128.0
+            case .other: return 52.0 * deviceScaleFactor
             }
         }
         
         static var gameSpeed: CGFloat {
             switch DeviceType.current {
-            case .iPhone:  return baseSpeed
-            case .iPad:    return baseSpeed
-            case .other:   return baseSpeed
+            case .iPhone: return 7.0
+            case .iPad: return 9.5  // Faster on iPad due to wider screen
+            case .other: return 7.0 * deviceScaleFactor
             }
         }
     }
