@@ -4,6 +4,36 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Game Over screen implementation for FlappyMax
+ 
+ Responsibilities:
+ - Display final score
+ - Show high scores
+ - Handle restart options
+ - Manage transitions
+ 
+ UI Elements:
+ - Score display
+ - High score table
+ - Restart button
+ - Main menu button
+ 
+ Features:
+ - Score animation
+ - High score checks
+ - Input handling
+ - Scene transitions
+ 
+ Integration:
+ - Leaderboard management
+ - Score persistence
+ - Scene navigation
+ 
+ Usage:
+ Displayed when player loses
+ Handles game reset and navigation
+ */
 
 import SpriteKit
 import Foundation
@@ -53,7 +83,7 @@ class GameOverScene: SKScene {
         let coinSprite = SKSpriteNode(texture: coinTexture)
         let coinSize = GameConfig.adaptiveSize(
             for: coinTexture,
-            baseScale: GameConfig.Scales.highScoreCoin * 0.5, // Make it smaller
+            baseScale: GameConfig.Scales.coinIcon,
             spriteType: .coin
         )
         coinSprite.size = coinSize
@@ -138,7 +168,7 @@ class GameOverScene: SKScene {
         
         // Restart Button
         let restartButton = SKLabelNode(fontNamed: "Helvetica")
-        restartButton.text = "Restart Game"
+        restartButton.text = "Restart"
         restartButton.fontSize = GameConfig.adaptiveFontSize(24)
         restartButton.fontColor = .white
         restartButton.position = CGPoint(x: -GameConfig.scaled(120), y: 0)

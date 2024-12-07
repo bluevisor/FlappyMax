@@ -4,7 +4,40 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
-// Configuration for different devices and game parameters
+/*
+ Configuration manager for FlappyMax game
+ 
+ This file manages all device-specific and gameplay configurations including:
+ 
+ Device Detection:
+ - Detects device type (iPhone/iPad/other)
+ - Provides device-specific scaling factors
+ 
+ Sprite Scaling:
+ - Manages sprite sizes for different devices
+ - Handles scaling for: hero, poles, floor, coins, burgers, UI elements
+ 
+ Game Metrics:
+ - Screen layout and margins
+ - Collision boundaries
+ - UI positioning
+ - Gameplay element spacing
+ 
+ Physics Parameters:
+ - Gravity settings
+ - Jump impulse force
+ - Game speed
+ - Movement parameters
+ 
+ Adaptive Sizing:
+ - Dynamic texture scaling
+ - Font size adaptation
+ - Screen-size based adjustments
+ 
+ Usage:
+ Access configurations through GameConfig.{Category}.{parameter}
+ Example: GameConfig.Physics.gravity
+ */
 
 import Foundation
 import UIKit
@@ -116,6 +149,14 @@ enum GameConfig {
             case .iPhone: return 0.4
             case .iPad: return 0.6
             case .other: return 0.4 * deviceScaleFactor
+            }
+        }
+        
+        static var coinIcon: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 0.8
+            case .iPad: return 0.4
+            case .other: return 1.0 * deviceScaleFactor
             }
         }
     }

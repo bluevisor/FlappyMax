@@ -53,7 +53,7 @@ class LoadingScene: SKScene {
             y: progressBar.position.y - 20
         )
         progressLabel.verticalAlignmentMode = .top
-        addChild(progressLabel)
+//        addChild(progressLabel)
         
         // Loading text
         loadingText = SKLabelNode(fontNamed: "Helvetica-Light")
@@ -65,7 +65,7 @@ class LoadingScene: SKScene {
             y: progressBar.position.y + 30
         )
         loadingText.verticalAlignmentMode = .bottom
-        addChild(loadingText)
+//        addChild(loadingText)
         
         // Initial progress update
         updateProgress(to: 0)

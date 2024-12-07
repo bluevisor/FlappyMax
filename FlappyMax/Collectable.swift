@@ -4,6 +4,33 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Collectible items management for FlappyMax
+ 
+ Types of Collectibles:
+ - Coins (score increase)
+ - Burgers (stamina replenishment)
+ 
+ Features:
+ - Sprite animation handling
+ - Collection detection
+ - Reward distribution
+ - Object pooling
+ 
+ Positioning:
+ - Dynamic placement between poles
+ - Height variation
+ - Collision detection
+ 
+ Management:
+ - Sprite recycling
+ - Animation states
+ - Collection effects
+ 
+ Usage:
+ Manages all collectible items in the game
+ Handles collection logic and rewards
+ */
 
 import SpriteKit
 import GameplayKit

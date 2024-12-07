@@ -4,6 +4,49 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Main game scene for FlappyMax
+ 
+ Core Responsibilities:
+ - Game loop management
+ - Physics simulation
+ - Input handling
+ - Collision detection
+ - Score tracking
+ 
+ Key Components:
+ 
+ Player:
+ - Hero sprite management
+ - Jump mechanics
+ - Stamina system
+ 
+ Environment:
+ - Scrolling background
+ - Moving floor
+ - Obstacle generation (poles)
+ - Collectible management (coins/burgers)
+ 
+ UI Elements:
+ - Score display
+ - Coin counter
+ - Stamina bar
+ 
+ Game States:
+ - Game over handling
+ - Score submission
+ - High score tracking
+ 
+ Sound Effects:
+ - Jump sounds
+ - Collision sounds
+ - Collectible pickup sounds
+ 
+ Performance Optimizations:
+ - Object pooling for sprites
+ - Cached calculations
+ - Efficient collision detection
+ */
 
 import SpriteKit
 import GameplayKit
@@ -296,10 +339,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         coinTexture.filteringMode = .nearest
         let coinSprite = SKSpriteNode(texture: coinTexture)
         
-        // Use smaller scale for coin counter
+        // Use the new coinIcon scale
         let coinSize = GameConfig.adaptiveSize(
             for: coinTexture,
-            baseScale: GameConfig.Scales.coinCounter * 0.5, // Make it smaller
+            baseScale: GameConfig.Scales.coinIcon,
             spriteType: .coin
         )
         coinSprite.size = coinSize

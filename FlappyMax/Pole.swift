@@ -4,6 +4,30 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Pole obstacle management for FlappyMax
+ 
+ Responsibilities:
+ - Pole pair generation and positioning
+ - Score zone creation and management
+ - Pole movement and recycling
+ 
+ Key Features:
+ - Dynamic gap sizing based on device
+ - Collision detection setup
+ - Efficient pole pair pooling
+ - Score zone positioning
+ 
+ Components:
+ - Top and bottom pole sprites
+ - Invisible score zone
+ - Physics body configuration
+ - Position calculations
+ 
+ Usage:
+ Used by GameScene to create and manage the game's main obstacles
+ Handles both visual and collision aspects of the poles
+ */
 
 import SpriteKit
 import GameplayKit
