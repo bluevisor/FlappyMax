@@ -200,7 +200,7 @@ extension NameEntryScene: UITextFieldDelegate {
         // Transition to game over scene
         let gameOverScene = GameOverScene(size: size)
         gameOverScene.currentScore = finalScore
-        let transition = SKTransition.fade(withDuration: 0.5)
+        let transition = SKTransition.fade(withDuration: 0.3)
         view?.presentScene(gameOverScene, transition: transition)
         
         return true
