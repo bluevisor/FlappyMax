@@ -1,13 +1,36 @@
+//
+//  LoadingScene.swift
+//  FlappyMax
+//
+//  Created by John Zheng on 10/31/24.
+//
+//  LoadingScene.swift
+//
+//  This file defines the `LoadingScene` class, which is responsible for displaying a loading screen while the game assets are being preloaded. The loading scene provides visual feedback to the player, indicating that the game is preparing to start. It includes a progress bar that updates as assets are loaded, ensuring that players have a smooth transition into the main game scene.
+//
+//  Responsibilities:
+//  - Display a loading screen with a progress bar and loading text.
+//  - Manage the loading of game assets, including textures and sound effects.
+//  - Update the loading progress visually and programmatically.
+//  - Transition to the main menu or game scene once all assets are loaded.
+//
+//  Key Components:
+//  - `progressBar`: A visual representation of the loading progress.
+//  - `progressFill`: The portion of the progress bar that indicates the current loading progress.
+//  - `currentProgress`: The current loading progress, represented as a value between 0 and 1.
+//  - Methods to handle the loading process and update the UI accordingly.
+//
+//  Usage:
+//  The `LoadingScene` is presented at the start of the game to preload necessary assets in the background. Once all assets are loaded, the scene transitions to the main menu or the game scene, providing a seamless experience for the player.
+
 import SpriteKit
 
 class LoadingScene: SKScene {
     private var progressBar: SKShapeNode!
     private var progressFill: SKShapeNode!
-    private var progressLabel: SKLabelNode!
-    private var loadingText: SKLabelNode!
     
-    private let progressBarWidth: CGFloat = 300
-    private let progressBarHeight: CGFloat = 4
+    private let progressBarWidth: CGFloat = 420
+    private let progressBarHeight: CGFloat = 5
     private let cornerRadius: CGFloat = 2
     
     private var currentProgress: CGFloat = 0.0 {
@@ -44,29 +67,6 @@ class LoadingScene: SKScene {
         progressFill.position = progressBar.position
         addChild(progressFill)
         
-        // Progress percentage label
-        progressLabel = SKLabelNode(fontNamed: "Helvetica")
-        progressLabel.fontSize = 14
-        progressLabel.fontColor = .white
-        progressLabel.position = CGPoint(
-            x: frame.midX,
-            y: progressBar.position.y - 20
-        )
-        progressLabel.verticalAlignmentMode = .top
-//        addChild(progressLabel)
-        
-        // Loading text
-        loadingText = SKLabelNode(fontNamed: "Helvetica-Light")
-        loadingText.text = "Loading FlappyMax"
-        loadingText.fontSize = 18
-        loadingText.fontColor = .white
-        loadingText.position = CGPoint(
-            x: frame.midX,
-            y: progressBar.position.y + 30
-        )
-        loadingText.verticalAlignmentMode = .bottom
-//        addChild(loadingText)
-        
         // Initial progress update
         updateProgress(to: 0)
     }
@@ -80,7 +80,6 @@ class LoadingScene: SKScene {
             height: progressBarHeight
         )
         progressFill.path = UIBezierPath(roundedRect: fillRect, cornerRadius: cornerRadius).cgPath
-        progressLabel.text = "\(Int(currentProgress * 100))%"
     }
     
     func updateProgress(to progress: CGFloat) {
@@ -93,8 +92,8 @@ class LoadingScene: SKScene {
         updateProgress(to: 1.0)
         
         // Add a small delay before transitioning
-        let wait = SKAction.wait(forDuration: 0.3)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+        let wait = SKAction.wait(forDuration: 0.2)
+        let fadeOut = SKAction.fadeOut(withDuration: 0.3)
         
         run(SKAction.sequence([wait, fadeOut]), completion: completion)
     }
