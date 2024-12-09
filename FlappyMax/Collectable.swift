@@ -53,7 +53,7 @@ class Collectable {
         objc_setAssociatedObject(node, collectedKey, nil, .OBJC_ASSOCIATION_RETAIN)
     }
     
-    func initializeCollectiblePool(coinCount: Int = 20, burgerCount: Int = 3) {
+    func initializeCollectiblePool(coinCount: Int = 50, burgerCount: Int = 5) {
         // Initialize coin pool
         for _ in 0..<coinCount {
             let coin = createCollectable(textureName: "coin_01", physicsCategory: PhysicsCategory.coin)
@@ -81,6 +81,7 @@ class Collectable {
             // Reset collected state
             resetCollectedState(coin)
             coin.userData = nil
+            coin.alpha = 1.0  // Reset visibility
             
             // Restart spinning animation using atlas
             coin.removeAllActions()
@@ -108,17 +109,17 @@ class Collectable {
             if burger.parent != nil {
                 burger.removeFromParent()
             }
+            resetCollectedState(burger)
             burger.userData = nil
+            burger.alpha = 1.0  // Reset visibility
             return burger
         }
         return nil
     }
     
     func recycleCollectible(_ collectible: SKSpriteNode) {
-        // Mark as collected to prevent double collection
-        markAsCollected(collectible)
-        
         collectible.removeFromParent()
+        resetCollectedState(collectible)  // Reset the collected state instead of marking as collected
         
         if collectible.name == "coin" {
             coinPool.append(collectible)

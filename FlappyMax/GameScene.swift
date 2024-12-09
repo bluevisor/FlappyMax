@@ -412,7 +412,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let cloudHeight = cloudWidth * 0.6
             
             let cloud = SKShapeNode(rectOf: CGSize(width: cloudWidth, height: cloudHeight), cornerRadius: cloudHeight/2)
-            cloud.fillColor = .init(white: 1.0, alpha: 0.5)
+            cloud.fillColor = .init(white: 1.0, alpha: 0.3)
             cloud.strokeColor = .clear
             
             let randomX = CGFloat.random(in: -node.size.width/2...node.size.width/2)
@@ -682,7 +682,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         case PhysicsCategory.coin:
             if let coin = otherBody.node as? SKSpriteNode {
-                coin.removeFromParent()
+                Collectable.shared.recycleCollectible(coin)
                 coinScore += 1
                 coinScoreLabel.text = "\(coinScore)"
                 _ = playSoundEffect("coin")
@@ -690,7 +690,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
         case PhysicsCategory.burger:
             if let burger = otherBody.node as? SKSpriteNode {
-                burger.removeFromParent()
+                Collectable.shared.recycleCollectible(burger)
                 burgerScore += 1
                 currentStamina = maxStamina  // Full stamina restoration
                 updateStaminaBar()

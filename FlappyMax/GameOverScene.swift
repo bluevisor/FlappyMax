@@ -58,8 +58,7 @@ class GameOverScene: SKScene {
         
         // Check for high score if not skipped and score is not 0
         if !skipHighScoreCheck && mainScore > 0 {
-            let scores = leaderboardManager.getLeaderboard()
-            let isHighScore = scores.count < 10 || mainScore > (scores.last?.mainScore ?? 0)
+            let isHighScore = leaderboardManager.scoreQualifiesForLeaderboard(mainScore)
             
             if isHighScore {
                 // Transition to name entry scene
