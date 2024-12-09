@@ -41,6 +41,11 @@ class SettingsScene: SKScene {
     override func didMove(to view: SKView) {
         backgroundColor = .black
         
+        // Set default volume if not set
+        if UserDefaults.standard.object(forKey: "SFXVolume") == nil {
+            UserDefaults.standard.set(1.0, forKey: "SFXVolume")
+        }
+        
         let contentNode = SKNode()
         addChild(contentNode)
         
@@ -69,13 +74,13 @@ class SettingsScene: SKScene {
         volumeLabel.name = "volumePercent"
         contentNode.addChild(volumeLabel)
         
-        // Scoreboard button
-        let scoreboardButton = SKLabelNode(fontNamed: "Helvetica")
-        scoreboardButton.text = "Scoreboard"
-        scoreboardButton.fontSize = GameConfig.adaptiveFontSize(20)
-        scoreboardButton.position = CGPoint(x: 0, y: -spacing)
-        scoreboardButton.name = "scoreboardButton"
-        contentNode.addChild(scoreboardButton)
+        // High Scores button
+        let highScoresButton = SKLabelNode(fontNamed: "Helvetica")
+        highScoresButton.text = "High Scores"
+        highScoresButton.fontSize = GameConfig.adaptiveFontSize(20)
+        highScoresButton.position = CGPoint(x: 0, y: -spacing)
+        highScoresButton.name = "highScoresButton"
+        contentNode.addChild(highScoresButton)
         
         // Clear Scoreboard button
         let resetButton = SKLabelNode(fontNamed: "Helvetica")
@@ -108,7 +113,7 @@ class SettingsScene: SKScene {
         let slider = UISlider()
         slider.minimumValue = 0
         slider.maximumValue = 1
-        slider.value = UserDefaults.standard.float(forKey: "SoundEffectsVolume")
+        slider.value = UserDefaults.standard.float(forKey: "SFXVolume")
 
         // Decide on slider width
         let sliderWidth: CGFloat = UIDevice.current.userInterfaceIdiom == .phone ? 260 : 300
@@ -131,7 +136,7 @@ class SettingsScene: SKScene {
     }
     
     @objc private func sliderValueChanged(_ sender: UISlider) {
-        UserDefaults.standard.set(sender.value, forKey: "SoundEffectsVolume")
+        UserDefaults.standard.set(sender.value, forKey: "SFXVolume")
         updateVolumeLabel()
     }
     
@@ -175,7 +180,7 @@ class SettingsScene: SKScene {
             let menuScene = MainMenuScene(size: self.size)
             menuScene.scaleMode = .aspectFill
             view?.presentScene(menuScene, transition: SKTransition.fade(withDuration: 0.3))
-        } else if nodesAtLocation.contains(where: { $0.name == "scoreboardButton" }) {
+        } else if nodesAtLocation.contains(where: { $0.name == "highScoresButton" }) {
             volumeSlider?.removeFromSuperview()
             let highScoresScene = HighScoresScene(size: self.size)
             highScoresScene.scaleMode = .aspectFill

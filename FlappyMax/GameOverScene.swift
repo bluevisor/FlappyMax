@@ -39,8 +39,8 @@ class GameOverScene: SKScene {
     private let leaderboardManager = LeaderboardManager.shared
     var mainScore: Int = 0
     var coinScore: Int = 0
-    var gameOverReason: GameOverReason = .outOfEnergy
-    private var skipHighScoreCheck: Bool = false
+    var gameOverReason: GameOverReason = .collision
+    var skipHighScoreCheck: Bool = false
     
     // MARK: - Initialization
     init(size: CGSize, skipHighScoreCheck: Bool = false) {
@@ -63,7 +63,7 @@ class GameOverScene: SKScene {
             
             if isHighScore {
                 // Transition to name entry scene
-                let nameEntryScene = NameEntryScene(size: self.size, score: mainScore, coins: coinScore)
+                let nameEntryScene = NameEntryScene(size: self.size, score: mainScore, coins: coinScore, gameOverReason: gameOverReason)
                 nameEntryScene.scaleMode = .aspectFill
                 view.presentScene(nameEntryScene, transition: SKTransition.fade(withDuration: 0.3))
                 return
@@ -97,38 +97,121 @@ class GameOverScene: SKScene {
         
         // Game Over Label
         let gameOverLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
-        gameOverLabel.text = gameOverReason == .collision ? "CRASHED!" : "OUT OF ENERGY!"
+        gameOverLabel.text = "GAME OVER!"
         gameOverLabel.fontSize = GameConfig.adaptiveFontSize(48)
-        gameOverLabel.position = CGPoint(x: 0, y: spacing * 3)
+        gameOverLabel.position = CGPoint(x: 0, y: spacing * 3.3)
         contentNode.addChild(gameOverLabel)
+        
+        // Game Over Reason
+        let reasonLabel = SKLabelNode(fontNamed: "Helvetica")
+        reasonLabel.text = gameOverReason == .collision ? "Crashed!" : "Out of Energy!"
+        reasonLabel.fontSize = GameConfig.adaptiveFontSize(20)
+        reasonLabel.position = CGPoint(x: 0, y: spacing * 2.6)
+        contentNode.addChild(reasonLabel)
+        
+        // Score and Coins on same line
+        let statsNode = SKNode()
         
         // Score Label
         let scoreLabel = SKLabelNode(fontNamed: "Helvetica")
         scoreLabel.text = "Score: \(mainScore)"
-        scoreLabel.fontSize = GameConfig.adaptiveFontSize(32)
-        scoreLabel.position = CGPoint(x: 0, y: spacing * 1.5)
-        contentNode.addChild(scoreLabel)
+        scoreLabel.fontSize = GameConfig.adaptiveFontSize(20)
+        scoreLabel.horizontalAlignmentMode = .right
+        scoreLabel.position = CGPoint(x: -spacing * 0.2, y: spacing * 2.0)
+        statsNode.addChild(scoreLabel)
         
         // Coins Label
         let coinsLabel = SKLabelNode(fontNamed: "Helvetica")
         coinsLabel.text = "Coins: \(coinScore)"
-        coinsLabel.fontSize = GameConfig.adaptiveFontSize(32)
-        coinsLabel.position = CGPoint(x: 0, y: spacing * 0.5)
-        contentNode.addChild(coinsLabel)
+        coinsLabel.fontSize = GameConfig.adaptiveFontSize(20)
+        coinsLabel.horizontalAlignmentMode = .left
+        coinsLabel.position = CGPoint(x: spacing * 0.2, y: spacing * 2.0)
+        statsNode.addChild(coinsLabel)
+        
+        contentNode.addChild(statsNode)
+        
+        // High Scores
+        let leaderboard = leaderboardManager.getLeaderboard()
+        if !leaderboard.isEmpty {
+            let scoresNode = SKNode()
+            
+            // High Scores Title
+            let highScoresTitle = SKLabelNode(fontNamed: "Helvetica")
+            highScoresTitle.text = "HIGH SCORES"
+            highScoresTitle.fontSize = GameConfig.adaptiveFontSize(24)
+            highScoresTitle.position = CGPoint(x: 0, y: spacing * 1.3)
+            scoresNode.addChild(highScoresTitle)
+            
+            // Display top 5 scores
+            let topScores = Array(leaderboard.prefix(5))
+            for (index, score) in topScores.enumerated() {
+                let name = score.name ?? "Anonymous"
+                let yPos = spacing * (0.2 - CGFloat(index) * 0.5)
+                
+                let scoreEntry = SKNode()
+                
+                // Rank
+                let rankLabel = SKLabelNode(fontNamed: "Helvetica")
+                rankLabel.text = "\(index + 1)."
+                rankLabel.fontSize = GameConfig.adaptiveFontSize(18)
+                rankLabel.horizontalAlignmentMode = .right
+                rankLabel.position = CGPoint(x: -spacing * 2.6, y: yPos)
+                scoreEntry.addChild(rankLabel)
+                
+                // Name
+                let nameLabel = SKLabelNode(fontNamed: "Helvetica")
+                nameLabel.text = name.count > 10 ? String(name.prefix(10)) + "..." : name
+                nameLabel.fontSize = GameConfig.adaptiveFontSize(18)
+                nameLabel.horizontalAlignmentMode = .left
+                nameLabel.position = CGPoint(x: -spacing * 2.4, y: yPos)
+                scoreEntry.addChild(nameLabel)
+                
+                // Score with Coin Icon
+                let scoreContainer = SKNode()
+                
+                let scoreValueLabel = SKLabelNode(fontNamed: "Helvetica")
+                scoreValueLabel.text = "\(score.mainScore)  |"
+                scoreValueLabel.fontSize = GameConfig.adaptiveFontSize(18)
+                scoreValueLabel.horizontalAlignmentMode = .right
+                scoreValueLabel.position = CGPoint(x: -spacing * 0.2, y: 0)
+                scoreContainer.addChild(scoreValueLabel)
+                
+                let coinScoreLabel = SKLabelNode(fontNamed: "Helvetica")
+                coinScoreLabel.text = "\(score.coinScore)"
+                coinScoreLabel.fontSize = GameConfig.adaptiveFontSize(18)
+                coinScoreLabel.horizontalAlignmentMode = .right
+                coinScoreLabel.position = CGPoint(x: spacing * 0.4, y: 0)
+                scoreContainer.addChild(coinScoreLabel)
+                
+                let coinAtlas = SKTextureAtlas(named: "coin")
+                let coinTexture = coinAtlas.textureNamed("coin_12")
+                let coinIcon = SKSpriteNode(texture: coinTexture)
+                coinIcon.size = CGSize(width: GameConfig.adaptiveFontSize(18), height: GameConfig.adaptiveFontSize(18))
+                coinIcon.position = CGPoint(x: spacing * 0.7, y: GameConfig.adaptiveFontSize(18) * 0.3)
+                scoreContainer.addChild(coinIcon)
+                
+                scoreContainer.position = CGPoint(x: spacing * 3.0, y: yPos)
+                scoreEntry.addChild(scoreContainer)
+                
+                scoresNode.addChild(scoreEntry)
+            }
+            
+            contentNode.addChild(scoresNode)
+        }
         
         // Restart Button
         let restartButton = SKLabelNode(fontNamed: "Helvetica")
         restartButton.text = "Restart"
-        restartButton.fontSize = GameConfig.adaptiveFontSize(32)
-        restartButton.position = CGPoint(x: 0, y: -spacing * 1.5)
+        restartButton.fontSize = GameConfig.adaptiveFontSize(24)
+        restartButton.position = CGPoint(x: 0, y: -spacing * 3)
         restartButton.name = "restartButton"
         contentNode.addChild(restartButton)
         
         // Menu Button
         let menuButton = SKLabelNode(fontNamed: "Helvetica")
-        menuButton.text = "Menu"
-        menuButton.fontSize = GameConfig.adaptiveFontSize(32)
-        menuButton.position = CGPoint(x: 0, y: -spacing * 2.5)
+        menuButton.text = "Main Menu"
+        menuButton.fontSize = GameConfig.adaptiveFontSize(24)
+        menuButton.position = CGPoint(x: 0, y: -spacing * 4)
         menuButton.name = "menuButton"
         contentNode.addChild(menuButton)
         

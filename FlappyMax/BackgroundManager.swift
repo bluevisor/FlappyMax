@@ -45,8 +45,8 @@ class BackgroundManager {
 
         // Generate the background gradient texture
         let gradientTexture = createGradientTexture(
-            startColor: UIColor(hex: "#060606"),
-            endColor: UIColor(hex: "#191919"),
+            startColor: UIColor(hex: "#060606"),  // Dark black
+            endColor: UIColor(hex: "#191919"),    // Lighter black
             size: size
         )
         

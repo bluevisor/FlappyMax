@@ -88,7 +88,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 3.2
             case .iPad: return 3.6
-            case .other: return 3.8
+            case .other: return 3.6  // Match iPad
             }
         }
         
@@ -210,8 +210,8 @@ enum GameConfig {
 
         static var polePairGap: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 165.0
-            case .iPad: return 175.0
+            case .iPhone: return 150.0
+            case .iPad: return 165.0
             case .other: return 165.0
             }
         }
@@ -222,17 +222,17 @@ enum GameConfig {
 
         static var polePairMinY: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return heroBaseSize.height * 2.0
-            case .iPad: return heroBaseSize.height * 2.0
-            case .other: return heroBaseSize.height * 2.0
+            case .iPhone: return heroBaseSize.height * 1.0
+            case .iPad: return heroBaseSize.height * 1.5
+            case .other: return heroBaseSize.height * 1.5
             }
         }
 
         static var polePairMaxY: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return screenSize.height - (heroBaseSize.height * 2.0)
-            case .iPad: return screenSize.height - (heroBaseSize.height * 2.0)
-            case .other: return screenSize.height - (heroBaseSize.height * 2.0)
+            case .iPhone: return screenSize.height - (heroBaseSize.height * 1.0)
+            case .iPad: return screenSize.height - (heroBaseSize.height * 1.5)
+            case .other: return screenSize.height - (heroBaseSize.height * 1.5)
             }
         }
 
@@ -276,7 +276,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return -7.5
             case .iPad: return -9.5
-            case .other: return -9.0
+            case .other: return -9.5  // Match iPad
             }
         }
 
@@ -284,7 +284,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 42.0
             case .iPad: return 142.0
-            case .other: return 42.0
+            case .other: return 142.0  // Match iPad
             }
         }
 
@@ -292,7 +292,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 7.0
             case .iPad: return 10.0
-            case .other: return 7.0
+            case .other: return 10.0  // Match iPad
             }
         }
     }

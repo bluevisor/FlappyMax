@@ -40,10 +40,12 @@ class NameEntryScene: SKScene {
     private var textField: UITextField?
     private var score: Int
     private var coins: Int
+    private var gameOverReason: GameOverReason
     
-    init(size: CGSize, score: Int, coins: Int) {
+    init(size: CGSize, score: Int, coins: Int, gameOverReason: GameOverReason) {
         self.score = score
         self.coins = coins
+        self.gameOverReason = gameOverReason
         super.init(size: size)
     }
     
@@ -154,14 +156,17 @@ class NameEntryScene: SKScene {
         NotificationCenter.default.removeObserver(self)
     }
     
-    private func submitScore(name: String?) {
+    private func submitName(_ name: String) {
         // Add to leaderboard
-        leaderboardManager.addScore(score, name: name)
+        LeaderboardManager.shared.addScore(score, name: name, coins: coins)
         
-        // Transition to high scores scene
-        let highScoresScene = HighScoresScene(size: self.size)
-        highScoresScene.scaleMode = .aspectFill
-        view?.presentScene(highScoresScene, transition: SKTransition.fade(withDuration: 0.3))
+        // Transition to game over scene
+        let gameOverScene = GameOverScene(size: self.size, skipHighScoreCheck: true)
+        gameOverScene.mainScore = score
+        gameOverScene.coinScore = coins
+        gameOverScene.gameOverReason = gameOverReason
+        gameOverScene.scaleMode = .aspectFill
+        view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
     }
 }
 
@@ -173,7 +178,7 @@ extension NameEntryScene: UITextFieldDelegate {
         let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
         print("NameEntryScene: Name entered: \(name)")
         
-        submitScore(name: name.isEmpty ? "Anonymous" : name)
+        submitName(name.isEmpty ? "Anonymous" : name)
         
         // Remove the text field
         textField.resignFirstResponder()

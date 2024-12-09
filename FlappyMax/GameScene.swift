@@ -77,8 +77,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Background Configuration
     internal let numberOfBackgrounds = 3
-    internal var backgroundSpeed: CGFloat { GameConfig.Physics.gameSpeed * 0.625 }
+    internal var backgroundSpeed: CGFloat { GameConfig.Physics.gameSpeed * 0.618 }
     internal var backgroundNodes: [SKSpriteNode] = []
+    internal var parallaxLayers: [[SKSpriteNode]] = []
+    internal let parallaxSpeeds: [CGFloat] = [0.2, 0.4, 0.6] // Different speeds for each layer
 
     // MARK: - Hero Configuration
     internal var hero: SKSpriteNode!
@@ -87,7 +89,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal let staminaReplenishment: CGFloat = 25.0
 
     // MARK: - Floor Configuration
-    internal var floorSpeed: CGFloat { GameConfig.Physics.gameSpeed }
+    internal var floorSpeed: CGFloat { GameConfig.Physics.gameSpeed * 1.2 }  // 20% faster than game speed
     internal var floorNodes: [SKSpriteNode] = []  // Add this line
 
     // MARK: - Pole & Collectible Configuration
@@ -217,6 +219,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func didMove(to view: SKView) {
         super.didMove(to: view)
         
+        // Hide physics bodies
+        view.showsPhysics = false
+        
         // Log current volume and load sounds
         let currentVolume = UserDefaults.standard.float(forKey: "SFXVolume")
         print("Current game volume: \(currentVolume * 100)%")
@@ -290,7 +295,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         coinCounterNode.position = CGPoint(x: frame.maxX - GameConfig.scaled(20), y: frame.maxY - GameConfig.scaled(30))
         coinCounterNode.zPosition = 100
         
-        coinSprite.position = CGPoint(x: -coinSize.width - GameConfig.scaled(10), y: 0)
+        coinSprite.position = CGPoint(x: -coinSize.width - GameConfig.scaled(15), y: -1)
         coinCounterNode.addChild(coinSprite)
         
         coinScoreLabel.position = CGPoint(x: 0, y: 0)
@@ -319,13 +324,102 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func setupBackground() {
-        for i in 0..<numberOfBackgrounds {
-            let background = SKSpriteNode(color: SKColor(red: 50/255, green: 150/255, blue: 250/255, alpha: 1.0), size: self.size)
-            background.anchorPoint = CGPoint(x: 0, y: 0)
-            background.position = CGPoint(x: CGFloat(i) * self.size.width, y: 0)
-            background.zPosition = -1
-            addChild(background)
-            backgroundNodes.append(background)
+        // Create three parallax layers
+        for layerIndex in 0..<3 {
+            var layerNodes: [SKSpriteNode] = []
+            let alpha = 1.0 - (CGFloat(layerIndex) * 0.2) // Decreasing opacity for back layers
+            
+            for i in 0..<numberOfBackgrounds {
+                // Create gradient background
+                let background = createBackgroundLayer(layerIndex: layerIndex, alpha: alpha)
+                background.anchorPoint = CGPoint(x: 0, y: 0)
+                background.position = CGPoint(x: CGFloat(i) * self.size.width, y: 0)
+                background.zPosition = -10 + CGFloat(layerIndex)
+                addChild(background)
+                layerNodes.append(background)
+            }
+            parallaxLayers.append(layerNodes)
+        }
+    }
+    
+    private func createBackgroundLayer(layerIndex: Int, alpha: CGFloat) -> SKSpriteNode {
+        // Create a gradient layer
+        let gradientNode = SKSpriteNode(color: .clear, size: self.size)
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.frame = CGRect(origin: .zero, size: self.size)
+        gradientLayer.colors = [
+            UIColor(red: 16/255, green: 50/255, blue: 152/255, alpha: alpha).cgColor,  // Dark blue
+            UIColor(red: 32/255, green: 83/255, blue: 203/255, alpha: alpha).cgColor  // Light blue
+        ]
+        gradientLayer.locations = [0.0, 1.0]
+        
+        UIGraphicsBeginImageContextWithOptions(self.size, false, 0.0)
+        if let context = UIGraphicsGetCurrentContext() {
+            gradientLayer.render(in: context)
+            if let gradientImage = UIGraphicsGetImageFromCurrentImageContext() {
+                gradientNode.texture = SKTexture(image: gradientImage)
+            }
+        }
+        UIGraphicsEndImageContext()
+        
+        // Add visual elements based on layer
+        switch layerIndex {
+        case 0: // Back layer - distant mountains
+            addMountains(to: gradientNode, large: false, color: .init(white: 1.0, alpha: 0.2))
+        case 1: // Middle layer - medium mountains
+            addMountains(to: gradientNode, large: true, color: .init(white: 1.0, alpha: 0.3))
+        case 2: // Front layer - small decorative elements
+            addClouds(to: gradientNode)
+        default:
+            break
+        }
+        
+        return gradientNode
+    }
+    
+    private func addMountains(to node: SKSpriteNode, large: Bool, color: SKColor) {
+        let path = UIBezierPath()
+        let width = node.size.width
+        let height = node.size.height
+        let mountainHeight = large ? height * 0.3 : height * 0.2
+        
+        path.move(to: CGPoint(x: 0, y: 0))
+        
+        var x: CGFloat = 0
+        while x < width {
+            let mountainWidth = large ? CGFloat.random(in: 100...200) : CGFloat.random(in: 60...120)
+            let peakHeight = CGFloat.random(in: mountainHeight/2...mountainHeight)
+            
+            path.addLine(to: CGPoint(x: x + mountainWidth/2, y: peakHeight))
+            path.addLine(to: CGPoint(x: x + mountainWidth, y: 0))
+            
+            x += mountainWidth
+        }
+        
+        path.close()
+        
+        let shape = SKShapeNode(path: path.cgPath)
+        shape.fillColor = color
+        shape.strokeColor = .clear
+        shape.position = CGPoint(x: -width/2, y: height * 0.1)
+        node.addChild(shape)
+    }
+    
+    private func addClouds(to node: SKSpriteNode) {
+        let numClouds = 5
+        for _ in 0..<numClouds {
+            let cloudWidth = CGFloat.random(in: 80...220)  // Set cloud width
+            let cloudHeight = cloudWidth * 0.6
+            
+            let cloud = SKShapeNode(rectOf: CGSize(width: cloudWidth, height: cloudHeight), cornerRadius: cloudHeight/2)
+            cloud.fillColor = .init(white: 1.0, alpha: 0.5)
+            cloud.strokeColor = .clear
+            
+            let randomX = CGFloat.random(in: -node.size.width/2...node.size.width/2)
+            let randomY = CGFloat.random(in: node.size.height * 0.4...node.size.height * 0.8)
+            cloud.position = CGPoint(x: randomX, y: randomY)
+            
+            node.addChild(cloud)
         }
     }
 
@@ -486,8 +580,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             let gameSpeed = GameConfig.Physics.gameSpeed
             
+            // Move background layers with parallax effect
+            for (index, layer) in parallaxLayers.enumerated() {
+                let layerSpeed = gameSpeed * parallaxSpeeds[index]
+                for background in layer {
+                    background.position.x -= layerSpeed
+                    
+                    // Reset background position when it moves off screen
+                    if background.position.x <= -background.size.width {
+                        background.position.x += background.size.width * CGFloat(numberOfBackgrounds)
+                    }
+                }
+            }
+            
             // Move floor
-            moveFloor(speed: gameSpeed)
+            moveFloor(speed: floorSpeed)  // Use floorSpeed (1.2x game speed)
             
             // Move poles
             enumerateChildNodes(withName: "poleSet") { node, _ in
@@ -598,22 +705,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    private func gameOver(reason: GameOverReason = .collision) {
+    private func gameOver(reason: GameOverReason) {
+        if isGameOver { return }
         isGameOver = true
-        hero.removeAllActions()
         
         // Play game over sound
         _ = playSoundEffect("game_over")
         
-        // Create and configure game over scene
-        let gameOverScene = GameOverScene(size: self.size)
-        gameOverScene.mainScore = coinScore
-        gameOverScene.coinScore = burgerScore
-        gameOverScene.gameOverReason = reason
-        gameOverScene.scaleMode = .aspectFill
+        let mainScore = mainScore
+        let coinScore = coinScore
         
-        // Transition to game over scene
-        view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.3))
+        // Check if score qualifies for leaderboard
+        let leaderboard = LeaderboardManager.shared
+        let qualifiesForLeaderboard = mainScore > 0 && leaderboard.scoreQualifiesForLeaderboard(mainScore)
+        
+        let nextScene: SKScene
+        if qualifiesForLeaderboard {
+            nextScene = NameEntryScene(size: self.size, score: mainScore, coins: coinScore, gameOverReason: reason)
+        } else {
+            let gameOver = GameOverScene(size: self.size)
+            gameOver.mainScore = mainScore
+            gameOver.coinScore = coinScore
+            gameOver.gameOverReason = reason
+            nextScene = gameOver
+        }
+        
+        nextScene.scaleMode = .aspectFill
+        view?.presentScene(nextScene, transition: SKTransition.fade(withDuration: 0.5))
     }
     
     // MARK: - Reset Game

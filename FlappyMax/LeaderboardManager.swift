@@ -10,21 +10,28 @@ class LeaderboardManager {
     struct ScoreEntry: Codable {
         let name: String?
         let mainScore: Int
+        let coinScore: Int
         let date: Date
     }
     
-    func addScore(_ score: Int, name: String?) {
+    func addScore(_ score: Int, name: String?, coins: Int = 0) {
         var leaderboard = getLeaderboard()
-        let newEntry = ScoreEntry(name: name, mainScore: score, date: Date())
+        let newEntry = ScoreEntry(name: name, mainScore: score, coinScore: coins, date: Date())
         leaderboard.append(newEntry)
         
-        // Sort by score (descending) and keep top 10
+        // Sort by main score only (descending) and keep top 5
         leaderboard.sort { $0.mainScore > $1.mainScore }
-        if leaderboard.count > 10 {
-            leaderboard = Array(leaderboard.prefix(10))
+        if leaderboard.count > 5 {
+            leaderboard = Array(leaderboard.prefix(5))
         }
         
         saveLeaderboard(leaderboard)
+    }
+    
+    func scoreQualifiesForLeaderboard(_ score: Int) -> Bool {
+        let leaderboard = getLeaderboard()
+        if leaderboard.count < 5 { return true }
+        return score > leaderboard.last?.mainScore ?? 0
     }
     
     func getLeaderboard() -> [ScoreEntry] {
