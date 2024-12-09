@@ -58,13 +58,13 @@ class SettingsScene: SKScene {
         // Volume label
         let volumeTextLabel = SKLabelNode(fontNamed: "Helvetica")
         volumeTextLabel.text = "Volume"
-        volumeTextLabel.fontSize = GameConfig.adaptiveFontSize(24)
-        volumeTextLabel.position = CGPoint(x: -100, y: spacing * 1.5)
+        volumeTextLabel.fontSize = GameConfig.adaptiveFontSize(20)
+        volumeTextLabel.position = CGPoint(x: -80, y: spacing * 1.5)
         contentNode.addChild(volumeTextLabel)
         
         // Volume percentage label
         volumeLabel = SKLabelNode(fontNamed: "Helvetica")
-        volumeLabel.fontSize = GameConfig.adaptiveFontSize(24)
+        volumeLabel.fontSize = GameConfig.adaptiveFontSize(20)
         volumeLabel.position = CGPoint(x: 100, y: spacing * 1.5)
         volumeLabel.name = "volumePercent"
         contentNode.addChild(volumeLabel)
@@ -72,7 +72,7 @@ class SettingsScene: SKScene {
         // Scoreboard button
         let scoreboardButton = SKLabelNode(fontNamed: "Helvetica")
         scoreboardButton.text = "Scoreboard"
-        scoreboardButton.fontSize = GameConfig.adaptiveFontSize(24)
+        scoreboardButton.fontSize = GameConfig.adaptiveFontSize(20)
         scoreboardButton.position = CGPoint(x: 0, y: -spacing)
         scoreboardButton.name = "scoreboardButton"
         contentNode.addChild(scoreboardButton)
@@ -80,7 +80,7 @@ class SettingsScene: SKScene {
         // Clear Scoreboard button
         let resetButton = SKLabelNode(fontNamed: "Helvetica")
         resetButton.text = "Clear Scoreboard"
-        resetButton.fontSize = GameConfig.adaptiveFontSize(24)
+        resetButton.fontSize = GameConfig.adaptiveFontSize(20)
         resetButton.position = CGPoint(x: 0, y: -spacing * 2)
         resetButton.name = "resetButton"
         contentNode.addChild(resetButton)
@@ -88,7 +88,7 @@ class SettingsScene: SKScene {
         // Back button at bottom
         let backButton = SKLabelNode(fontNamed: "Helvetica")
         backButton.text = "Back"
-        backButton.fontSize = GameConfig.adaptiveFontSize(24)
+        backButton.fontSize = GameConfig.adaptiveFontSize(20)
         backButton.position = CGPoint(x: 0, y: -spacing * 3)
         backButton.name = "backButton"
         contentNode.addChild(backButton)
