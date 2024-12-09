@@ -7,185 +7,141 @@
 /*
  Collectible items management for FlappyMax
  
- Types of Collectibles:
- - Coins (score increase)
- - Burgers (stamina replenishment)
+ Responsibilities:
+ - Collectible object creation and recycling
+ - Collection state tracking and validation
+ - Position management and randomization
+ - Memory optimization through pooling
+ - Collision state handling
  
  Features:
- - Sprite animation handling
- - Collection detection
- - Reward distribution
- - Object pooling
- 
- Positioning:
- - Dynamic placement between poles
- - Height variation
- - Collision detection
- 
- Management:
- - Sprite recycling
- - Animation states
- - Collection effects
- 
- Usage:
- Manages all collectible items in the game
- Handles collection logic and rewards
+ - Efficient object pooling system
+ - Persistent collection state tracking
+ - Automatic sprite recycling
+ - Random position generation
+ - Collision detection setup
+ - Memory usage optimization
+ - Multiple collectible types (coins, burgers)
+ - Collection validation logic
+ - State reset on recycling
+ - Device-specific positioning
  */
 
 import SpriteKit
 import GameplayKit
 
-extension GameScene {
-    // ::HELPER:: Returns polePairs sorted by their x position
-    func sortedPolePairs() -> [SKNode] {
-        return polePairs.sorted { $0.position.x < $1.position.x }
-    }
-
-    // ::HELPER:: Returns consecutive pairs of poles as tuples (leftPair, rightPair)
-    func consecutivePolePairs() -> [(SKNode, SKNode)] {
-        return cachedSortedPairs
+class Collectable {
+    static let shared = Collectable()
+    private var coinPool: [SKSpriteNode] = []
+    private var burgerPool: [SKSpriteNode] = []
+    
+    // Key for associated object to store collected state
+    private let collectedKey = "CollectableCollectedState"
+    
+    private init() {}
+    
+    // Helper methods to manage collected state
+    func markAsCollected(_ node: SKSpriteNode) {
+        objc_setAssociatedObject(node, collectedKey, true, .OBJC_ASSOCIATION_RETAIN)
     }
     
-    // Updates the cached pairs - should be called once per frame
-    func updateConsecutivePolePairs() {
-        let sorted = sortedPolePairs()
-        guard sorted.count >= 2 else {
-            print("Warning: Not enough pole pairs to update cachedSortedPairs")
-            cachedSortedPairs = []
-            return
-        }
-        print("Updating cachedSortedPairs with sorted pole pairs: \(sorted)")
-        
-        var pairs = [(SKNode, SKNode)]()
-        for i in 0..<(sorted.count - 1) {
-            pairs.append((sorted[i], sorted[i+1]))
-        }
-        print("Updating cachedSortedPairs with \(pairs.count) pairs")
-        cachedSortedPairs = pairs
-        print("Cached sorted pairs updated: \(cachedSortedPairs)")
+    func isCollected(_ node: SKSpriteNode) -> Bool {
+        return (objc_getAssociatedObject(node, collectedKey) as? Bool) ?? false
     }
-
-    func setupCollectibles() {
-        print("Collectables: Starting setup")
-        updateConsecutivePolePairs()  // Update the cached pairs first
-        let allPairs = consecutivePolePairs()
-        print("Collectables: Found \(allPairs.count) pole pairs")
-        
-        if allPairs.isEmpty {
-            print("Warning: No pole pairs found for collectible placement")
-            return
+    
+    func resetCollectedState(_ node: SKSpriteNode) {
+        objc_setAssociatedObject(node, collectedKey, nil, .OBJC_ASSOCIATION_RETAIN)
+    }
+    
+    func initializeCollectiblePool(coinCount: Int = 20, burgerCount: Int = 3) {
+        // Initialize coin pool
+        for _ in 0..<coinCount {
+            let coin = createCollectable(textureName: "coin_01", physicsCategory: PhysicsCategory.coin)
+            coin.removeFromParent() // Ensure it's not in the scene
+            coinPool.append(coin)
         }
         
-        for (i, pair) in allPairs.enumerated() {
-            let (firstPolePair, secondPolePair) = pair
-            print("Processing pair \(i): first pole at \(firstPolePair.position), second pole at \(secondPolePair.position)")
-            
-            // Calculate a position between the pole pairs
-            let xPosition = (firstPolePair.position.x + secondPolePair.position.x) * 0.5
-            let yRange = GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY
-            
-            // Try multiple positions for coin placement to avoid overlap
-            var coinPlaced = false
-            var attempts = 0
-            let maxAttempts = 5
-            
-            while !coinPlaced && attempts < maxAttempts {
-                let yPosition = CGFloat.random(in: yRange)
-                let randomX = CGFloat.random(in: (xPosition - poleSpacing / 2)...(xPosition + poleSpacing / 2))
-                print("Attempting to place coin at: x: \(randomX), y: \(yPosition)")
-                
-                let floorHeight = GameConfig.Metrics.floorHeight
-                if yPosition < floorHeight {
-                    attempts += 1
-                    print("Y position below floor, trying new position")
-                    continue
-                }
-                let testPoint = CGPoint(x: randomX, y: yPosition)
-                let existingNodes = self.nodes(at: testPoint).filter { node in
-                    (PhysicsCategory.coin == PhysicsCategory.coin && node.physicsBody?.categoryBitMask == PhysicsCategory.coin) ||
-                    (PhysicsCategory.burger == PhysicsCategory.burger && node.physicsBody?.categoryBitMask == PhysicsCategory.burger) ||
-                    node.physicsBody?.categoryBitMask == PhysicsCategory.pole
-                }
-                
-                if existingNodes.isEmpty {
-                    // Create and position a coin
-                    let coin = createCollectable(
-                        textureName: "coin_01.png",
-                        physicsCategory: PhysicsCategory.coin,
-                        at: CGPoint(x: randomX, y: yPosition)
-                    )
-                    coinNodes.append(coin)
-                    obstacles.append(coin)
-                    addChild(coin)
-                    coinPlaced = true
-                    print("Successfully placed coin at attempt \(attempts + 1)")
-                } else {
-                    attempts += 1
-                    print("Collision detected at attempt \(attempts), trying new position")
-                }
+        // Initialize burger pool
+        for _ in 0..<burgerCount {
+            let burger = createCollectable(textureName: "burger.png", physicsCategory: PhysicsCategory.burger)
+            burger.name = "burger"
+            burger.removeFromParent() // Ensure it's not in the scene
+            burgerPool.append(burger)
+        }
+    }
+    
+    func getPooledCoin() -> SKSpriteNode? {
+        if let coin = coinPool.first {
+            coinPool.removeFirst()
+            // Ensure coin is removed from any parent before reuse
+            if coin.parent != nil {
+                coin.removeFromParent()
             }
             
-            // Set burger spawn frequency: 50% chance every 3rd pole pair
-            if i % 3 == 0 && Double.random(in: 0...1) < 0.5 {
-                var burgerPlaced = false
-                attempts = 0
-                
-                while !burgerPlaced && attempts < maxAttempts {
-                    let burgerYPosition = CGFloat.random(in: yRange)
-                    let randomX = CGFloat.random(in: (xPosition - poleSpacing / 2)...(xPosition + poleSpacing / 2))
-                    print("Attempting to place burger at: x: \(randomX), y: \(burgerYPosition)")
-                    
-                    let floorHeight = GameConfig.Metrics.floorHeight
-                    if burgerYPosition < floorHeight {
-                        attempts += 1
-                        print("Y position below floor, trying new position")
-                        continue
-                    }
-                    let testPoint = CGPoint(x: randomX, y: burgerYPosition)
-                    let existingNodes = self.nodes(at: testPoint).filter { node in
-                        (PhysicsCategory.coin == PhysicsCategory.coin && node.physicsBody?.categoryBitMask == PhysicsCategory.coin) ||
-                        (PhysicsCategory.burger == PhysicsCategory.burger && node.physicsBody?.categoryBitMask == PhysicsCategory.burger) ||
-                        node.physicsBody?.categoryBitMask == PhysicsCategory.pole
-                    }
-                    
-                    if existingNodes.isEmpty {
-                        let burger = createCollectable(
-                            textureName: "burger",
-                            physicsCategory: PhysicsCategory.burger,
-                            at: CGPoint(x: randomX, y: burgerYPosition)
-                        )
-                        burgerNodes.append(burger)
-                        obstacles.append(burger)
-                        addChild(burger)
-                        burgerPlaced = true
-                        print("Successfully placed burger at attempt \(attempts + 1)")
-                    } else {
-                        attempts += 1
-                        print("Collision detected at attempt \(attempts), trying new position")
-                    }
-                }
+            // Reset collected state
+            resetCollectedState(coin)
+            coin.userData = nil
+            
+            // Restart spinning animation using atlas
+            coin.removeAllActions()
+            let coinAtlas = SKTextureAtlas(named: "coin")
+            var textures: [SKTexture] = []
+            for i in 1...15 {
+                let textureName = String(format: "coin_%02d", i)
+                let texture = coinAtlas.textureNamed(textureName)
+                texture.filteringMode = .nearest
+                textures.append(texture)
             }
+            let spinAction = SKAction.animate(with: textures, timePerFrame: 0.05)
+            let repeatSpin = SKAction.repeatForever(spinAction)
+            coin.run(repeatSpin)
+            
+            return coin
         }
-        print("Collectables setup complete. Created \(coinNodes.count) coins and \(burgerNodes.count) burgers")
+        return nil
+    }
+    
+    func getPooledBurger() -> SKSpriteNode? {
+        if let burger = burgerPool.first {
+            burgerPool.removeFirst()
+            // Ensure burger is removed from any parent before reuse
+            if burger.parent != nil {
+                burger.removeFromParent()
+            }
+            burger.userData = nil
+            return burger
+        }
+        return nil
+    }
+    
+    func recycleCollectible(_ collectible: SKSpriteNode) {
+        // Mark as collected to prevent double collection
+        markAsCollected(collectible)
+        
+        collectible.removeFromParent()
+        
+        if collectible.name == "coin" {
+            coinPool.append(collectible)
+        } else if collectible.name == "burger" {
+            burgerPool.append(collectible)
+        }
     }
 
-    func createCollectable(
+    private func createCollectable(
         textureName: String,
-        physicsCategory: UInt32,
-        at position: CGPoint
+        physicsCategory: UInt32
     ) -> SKSpriteNode {
         let texture = SKTexture(imageNamed: textureName)
         texture.filteringMode = .nearest
         
-        let scale = (physicsCategory == PhysicsCategory.coin) ? GameConfig.Scales.coin : GameConfig.Scales.burger
-        let size = CGSize(
-            width: texture.size().width * scale,
-            height: texture.size().height * scale
+        // Use GameConfig's adaptive sizing for consistent scaling
+        let scaledSize = GameConfig.adaptiveSize(
+            for: texture,
+            spriteType: physicsCategory == PhysicsCategory.coin ? .coin : .burger
         )
 
-        let sprite = SKSpriteNode(texture: texture, size: size)
-        sprite.position = position
-        sprite.physicsBody = SKPhysicsBody(circleOfRadius: size.width / 2)
+        let sprite = SKSpriteNode(texture: texture, size: scaledSize)
+        sprite.physicsBody = SKPhysicsBody(circleOfRadius: scaledSize.width / 2)
         sprite.physicsBody?.isDynamic = false
         sprite.physicsBody?.categoryBitMask = physicsCategory
         sprite.physicsBody?.collisionBitMask = 0
@@ -194,131 +150,24 @@ extension GameScene {
         sprite.name = physicsCategory == PhysicsCategory.coin ? "coin" : "burger"
         
         if physicsCategory == PhysicsCategory.coin {
-            var frames: [SKTexture] = []
-            for i in 1...15 {
-                let frameTexture = SKTexture(imageNamed: String(format: "coin_%02d.png", i))
-                frameTexture.filteringMode = .nearest
-                frames.append(frameTexture)
-            }
-            let animation = SKAction.repeatForever(
-                SKAction.animate(with: frames, timePerFrame: GameConfig.Metrics.coinAnimationSpeed)
-            )
-            sprite.run(animation)
+            setupCoinAnimation(for: sprite)
         }
         
         return sprite
     }
-
-    func moveCollectibles(speed: CGFloat) {
-        guard !gameOver else { return }
-
-        // Move existing collectibles
-        for collectable in coinNodes + burgerNodes {
-            if collectable.parent != nil {
-                collectable.position.x -= speed
-                if collectable.position.x < (-collectable.size.width / 2) {
-                    collectable.removeFromParent()
-                }
-            }
-        }
-
-        // Use the cached pairs
-        let pairs = consecutivePolePairs()
-        guard !pairs.isEmpty else { return }
-
-        // Find the rightmost visible pair
-        guard let visiblePair = pairs.last(where: { $0.1.position.x < frame.width * 2 }) else { return }
-
-        let (leftPair, rightPair) = visiblePair
-        
-        // Calculate the exact center point between the pole pairs
-        let gapCenterX = (leftPair.position.x + rightPair.position.x) / 2
-
-        // Define a tolerance for what we consider "in the gap"
-        let gapTolerance = poleSpacing * 0.1 // 10% of pole spacing
-
-        // Check if there's any collectible in this gap, using a more precise tolerance
-        let collectiblesInGap = (coinNodes + burgerNodes).filter { node in
-            node.parent != nil &&
-            abs(node.position.x - gapCenterX) < gapTolerance
-        }
-
-        if collectiblesInGap.isEmpty {
-            // Place a coin if available, exactly at the center
-            if let coin = coinNodes.first(where: { $0.parent == nil }) {
-                let randomX = CGFloat.random(in: (gapCenterX - poleSpacing / 2)...(gapCenterX + poleSpacing / 2))
-                let yPosition = CGFloat.random(in: GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY)
-                let floorHeight = GameConfig.Metrics.floorHeight
-                if yPosition < floorHeight {
-                    print("Y position below floor, skipping placement")
-                    return
-                }
-                coin.position = CGPoint(
-                    x: randomX,
-                    y: yPosition
-                )
-                addChild(coin)
-            }
-
-            // Place a burger every 5th pair, exactly at the center
-            let sorted = sortedPolePairs()
-            if let rightPairIndex = sorted.firstIndex(of: rightPair) {
-                if rightPairIndex % 5 == 0 {
-                    if let burger = burgerNodes.first(where: { $0.parent == nil }) {
-                        let randomX = CGFloat.random(in: (gapCenterX - poleSpacing / 2)...(gapCenterX + poleSpacing / 2))
-                        let yPosition = CGFloat.random(in: GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY)
-                        let floorHeight = GameConfig.Metrics.floorHeight
-                        if yPosition < floorHeight {
-                            print("Y position below floor, skipping placement")
-                            return
-                        }
-                        burger.position = CGPoint(
-                            x: randomX,
-                            y: yPosition
-                        )
-                        addChild(burger)
-                    }
-                }
-            }
-        }
-    }
-
-    private func placeCollectable(_ collectable: SKSpriteNode) {
-        let allPairs = consecutivePolePairs()
-        guard !allPairs.isEmpty else { return }
-        
-        // Use the two rightmost pole pairs
-        let (rightmostPair, secondRightmostPair) = (allPairs[allPairs.count - 1].1, allPairs[allPairs.count - 1].0)
-        
-        // Use the same positioning logic as initial setup
-        let distance = abs(secondRightmostPair.position.x - rightmostPair.position.x)
-        let xOffset = distance * 0.5 // Exactly halfway between poles
-        let xPosition = rightmostPair.position.x + xOffset
-        let yRange = GameConfig.Metrics.polePairMinY...GameConfig.Metrics.polePairMaxY
-        let yPosition = CGFloat.random(in: yRange)
-        let floorHeight = GameConfig.Metrics.floorHeight
-        if yPosition < floorHeight {
-            print("Y position below floor, skipping placement")
-            return
-        }
-        collectable.position = CGPoint(x: xPosition, y: yPosition)
-    }
-
-    private func isOverlapping(collectable: SKSpriteNode) -> Bool {
-        // Check overlap with poles
-        for polePair in polePairs {
-            if abs(collectable.position.x - polePair.position.x) < minDistanceFromPole {
-                return true
-            }
+    
+    private func setupCoinAnimation(for coin: SKSpriteNode) {
+        let coinAtlas = SKTextureAtlas(named: "coin")
+        var frames: [SKTexture] = []
+        for i in 1...15 {
+            let textureName = String(format: "coin_%02d", i)
+            let texture = coinAtlas.textureNamed(textureName)
+            texture.filteringMode = .nearest
+            frames.append(texture)
         }
         
-        // Check overlap with other collectibles
-        for other in coinNodes + burgerNodes {
-            if other != collectable && collectable.frame.intersects(other.frame) {
-                return true
-            }
-        }
-        
-        return false
+        let spinAction = SKAction.animate(with: frames, timePerFrame: 0.05)
+        let repeatSpin = SKAction.repeatForever(spinAction)
+        coin.run(repeatSpin)
     }
 }

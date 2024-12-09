@@ -4,6 +4,28 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Utility functions for FlappyMax
+ 
+ Responsibilities:
+ - Common calculations
+ - Random number generation
+ - Device-specific utilities
+ - Math helper functions
+ - Resource management
+ 
+ Features:
+ - Random number generators
+ - Device detection
+ - Math utilities
+ - Asset loading
+ - String formatting
+ - Date handling
+ - Error checking
+ - Type conversion
+ - Path management
+ - Performance optimization
+ */
 
 import SpriteKit
 

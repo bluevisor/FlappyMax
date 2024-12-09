@@ -8,114 +8,57 @@
  Pole obstacle management for FlappyMax
  
  Responsibilities:
- - Pole pair generation and positioning
- - Score zone creation and management
- - Pole movement and recycling
- 
- Key Features:
- - Dynamic gap sizing based on device
- - Collision detection setup
- - Efficient pole pair pooling
- - Score zone positioning
- 
- Components:
- - Top and bottom pole sprites
- - Invisible score zone
+ - Obstacle generation and positioning
+ - Gap size and placement calculation
  - Physics body configuration
- - Position calculations
+ - Memory management through recycling
  
- Usage:
- Used by GameScene to create and manage the game's main obstacles
- Handles both visual and collision aspects of the poles
+ Features:
+ - Dynamic pole pair generation
+ - Configurable gap sizes and positions
+ - Physics collision detection setup
+ - Object pooling for performance
+ - Position randomization algorithms
+ - Smooth movement patterns
+ - Screen boundary handling
+ - Difficulty scaling support
+ - Memory-efficient sprite recycling
+ - Device-specific scaling
  */
 
 import SpriteKit
 import GameplayKit
 
-extension GameScene {
-    internal func setupPoles() {
-        // print("Poles: Starting setup")
-        for i in 0..<numberOfPolePairs {
-            // print("Creating  pole pair \(i)")
-            let poleNode = createPolePair()
-            let xPosition = frame.width + CGFloat(i) * poleSpacing
-            poleNode.position = CGPoint(x: xPosition, y: 0)
-            addChild(poleNode)
-            polePairs.append(poleNode)
-            // print("Pole pair \(i) created at x: \(xPosition)")
-        }
-        // print("Poles: Created \(polePairs.count) pairs")
-    }
-
-    internal func movePoles(speed: CGFloat) {
-        guard !gameOver else { return }
-        
-        // First, sort the pole pairs by x position to ensure proper ordering
-        let sortedPairs = polePairs.sorted { $0.position.x < $1.position.x }
-        
-        for polePair in polePairs {
-            polePair.position.x -= speed
-
-            if polePair.position.x < -polePair.calculateAccumulatedFrame().width {
-                // Remove old obstacles
-                for node in polePair.children {
-                    if let spriteNode = node as? SKSpriteNode {
-                        if let index = obstacles.firstIndex(of: spriteNode) {
-                            obstacles.remove(at: index)
-                        }
-                    }
-                }
-
-                let topPole = polePair.children[0] as! SKSpriteNode
-                let bottomPole = polePair.children[1] as! SKSpriteNode
-
-                // Calculate new valid position using same logic as setup
-                let poleHeight = topPole.size.height
-                let gap = polePairGap
-                
-                let minCenter = GameConfig.Metrics.polePairMinY
-                let maxCenter = GameConfig.Metrics.polePairMaxY
-                
-                let yPosition = CGFloat.random(
-                    in: min(minCenter, maxCenter)...max(minCenter, maxCenter)
-                )
-
-                let halfGap = gap / 2
-                topPole.position = CGPoint(x: 0, y: yPosition + halfGap + poleHeight/2)
-                bottomPole.position = CGPoint(x: 0, y: yPosition - halfGap - poleHeight/2)
-
-                // Update score zone
-                let scoreZone = SKNode()
-                scoreZone.position = CGPoint(x: 0, y: yPosition)
-                scoreZone.name = "scoreZone"
-                scoreZone.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: GameConfig.Metrics.scoreZoneWidth, height: gap))
-                scoreZone.physicsBody?.isDynamic = false
-                scoreZone.physicsBody?.categoryBitMask = PhysicsCategory.scoreZone
-                scoreZone.physicsBody?.contactTestBitMask = PhysicsCategory.hero
-                scoreZone.physicsBody?.collisionBitMask = 0
-
-                if let existingScoreZone = polePair.children.last {
-                    existingScoreZone.removeFromParent()
-                }
-                polePair.addChild(scoreZone)
-
-                // Find the rightmost pole pair's position
-                if let rightmostPair = sortedPairs.last {
-                    // Place the recycled pole pair exactly one poleSpacing distance from the rightmost pair
-                    polePair.position.x = rightmostPair.position.x + poleSpacing
-                } else {
-                    // Fallback if no other poles exist
-                    polePair.position.x = frame.width + poleSpacing
-                }
-
-                obstacles.append(topPole)
-                obstacles.append(bottomPole)
-            }
+class Pole {
+    static let shared = Pole()
+    private var polePool: [SKNode] = []
+    
+    private init() {}
+    
+    func initializePolePool(count: Int = 4) {
+        // Initialize the pole pool with a set number of pole pairs
+        for _ in 0..<count {
+            let poleSet = createPoleSet()
+            polePool.append(poleSet)
         }
     }
+    
+    func getPooledPoleSet() -> SKNode? {
+        return polePool.isEmpty ? nil : polePool.removeFirst()
+    }
 
-    internal func createPolePair() -> SKNode {
-        let polePair = SKNode()
+    func recyclePoleSet(_ poleSet: SKNode) {
+        poleSet.removeFromParent()
+        // Reset score zone state
+        if let scoreZone = poleSet.childNode(withName: "scoreZone") {
+            scoreZone.userData = nil
+        }
+        polePool.append(poleSet)
+    }
+
+    private func createPoleSet() -> SKNode {
+        let poleSet = SKNode()
+        poleSet.name = "poleSet"
         
         let poleTexture = SKTexture(imageNamed: "pole")
         poleTexture.filteringMode = .nearest
@@ -131,31 +74,12 @@ extension GameScene {
         topPole.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         topPole.zRotation = CGFloat.pi
         topPole.xScale = -1.0
+        topPole.name = "pole"
         
         let bottomPole = SKSpriteNode(texture: poleTexture)
         bottomPole.size = scaledSize
         bottomPole.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        
-        let poleHeight = scaledSize.height
-        let gap = polePairGap
-        
-        // Use GameConfig values for valid Y range
-        let minCenter = GameConfig.Metrics.polePairMinY
-        let maxCenter = GameConfig.Metrics.polePairMaxY
-        
-        // Generate a random y-position within the valid range
-        let yPosition = CGFloat.random(
-            in: min(minCenter, maxCenter)...max(minCenter, maxCenter)
-        )
-        
-        // Position poles relative to the gap center
-        let halfGap = gap / 2
-        topPole.position = CGPoint(x: 0, y: yPosition + halfGap + poleHeight/2)
-        bottomPole.position = CGPoint(x: 0, y: yPosition - halfGap - poleHeight/2)
-        
-        // Rest of pole setup...
-        topPole.zPosition = 0
-        bottomPole.zPosition = 0
+        bottomPole.name = "pole"
         
         // Create physics bodies
         topPole.physicsBody = SKPhysicsBody(texture: poleTexture, size: scaledSize)
@@ -170,9 +94,13 @@ extension GameScene {
         bottomPole.physicsBody?.contactTestBitMask = PhysicsCategory.hero
         bottomPole.physicsBody?.collisionBitMask = PhysicsCategory.hero
         
-        // Setup score zone
+        // Position poles
+        let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
+        topPole.position = CGPoint(x: 0, y: gap/2 + topPole.size.height/2)
+        bottomPole.position = CGPoint(x: 0, y: -gap/2 - bottomPole.size.height/2)
+        
+        // Setup score zone in the middle of the gap
         let scoreZone = SKNode()
-        scoreZone.position = CGPoint(x: 0, y: yPosition)
         scoreZone.name = "scoreZone"
         scoreZone.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: GameConfig.Metrics.scoreZoneWidth, height: gap))
         scoreZone.physicsBody?.isDynamic = false
@@ -180,14 +108,13 @@ extension GameScene {
         scoreZone.physicsBody?.contactTestBitMask = PhysicsCategory.hero
         scoreZone.physicsBody?.collisionBitMask = 0
         
-        polePair.addChild(topPole)
-        polePair.addChild(bottomPole)
-        polePair.addChild(scoreZone)
+        // Position score zone in the middle of the gap, slightly ahead of the poles
+        scoreZone.position = CGPoint(x: 0, y: 0)
         
-        // Add poles to obstacles array
-        obstacles.append(topPole)
-        obstacles.append(bottomPole)
+        poleSet.addChild(topPole)
+        poleSet.addChild(bottomPole)
+        poleSet.addChild(scoreZone)
         
-        return polePair
+        return poleSet
     }
 }

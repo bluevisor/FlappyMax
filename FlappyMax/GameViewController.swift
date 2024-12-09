@@ -4,6 +4,28 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Main view controller for FlappyMax
+ 
+ Responsibilities:
+ - Game initialization
+ - Scene management
+ - View configuration
+ - Device orientation
+ - Loading coordination
+ 
+ Features:
+ - Scene setup and transitions
+ - View configuration
+ - Orientation handling
+ - Loading screen management
+ - Error handling
+ - Memory management
+ - State preservation
+ - Performance monitoring
+ - Debug options
+ - Device adaptation
+ */
 
 import UIKit
 import SpriteKit
@@ -65,7 +87,7 @@ class GameViewController: UIViewController {
             // Create and present main menu scene
             let scene = MainMenuScene(size: view.bounds.size)
             scene.scaleMode = .aspectFill
-            view.presentScene(scene, transition: .fade(withDuration: 0.5))
+            view.presentScene(scene, transition: .fade(withDuration: 0.3))
             self?.loadingScene = nil
         }
     }

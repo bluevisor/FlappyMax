@@ -1,27 +1,43 @@
 //
+// LoadingScene.swift
+//
+// Initial loading scene for FlappyMax.
+// Features:
+// - Asset preloading
+// - Loading animation
+// - Progress indication
+// - Smooth transition to main menu
+// - Resource initialization
+//
+
+//
 //  LoadingScene.swift
 //  FlappyMax
 //
 //  Created by John Zheng on 10/31/24.
 //
-//  LoadingScene.swift
-//
-//  This file defines the `LoadingScene` class, which is responsible for displaying a loading screen while the game assets are being preloaded. The loading scene provides visual feedback to the player, indicating that the game is preparing to start. It includes a progress bar that updates as assets are loaded, ensuring that players have a smooth transition into the main game scene.
-//
-//  Responsibilities:
-//  - Display a loading screen with a progress bar and loading text.
-//  - Manage the loading of game assets, including textures and sound effects.
-//  - Update the loading progress visually and programmatically.
-//  - Transition to the main menu or game scene once all assets are loaded.
-//
-//  Key Components:
-//  - `progressBar`: A visual representation of the loading progress.
-//  - `progressFill`: The portion of the progress bar that indicates the current loading progress.
-//  - `currentProgress`: The current loading progress, represented as a value between 0 and 1.
-//  - Methods to handle the loading process and update the UI accordingly.
-//
-//  Usage:
-//  The `LoadingScene` is presented at the start of the game to preload necessary assets in the background. Once all assets are loaded, the scene transitions to the main menu or the game scene, providing a seamless experience for the player.
+/*
+ Initial loading scene for FlappyMax
+ 
+ Responsibilities:
+ - Resource preloading
+ - Loading state management
+ - Progress tracking
+ - Scene transition
+ - Error handling
+ 
+ Features:
+ - Asset preloading
+ - Loading animation
+ - Progress display
+ - Error handling
+ - Smooth transitions
+ - Resource management
+ - State tracking
+ - Memory optimization
+ - Performance monitoring
+ - User feedback
+ */
 
 import SpriteKit
 

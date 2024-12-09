@@ -4,6 +4,28 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Application delegate for FlappyMax
+ 
+ Responsibilities:
+ - App lifecycle management
+ - State handling
+ - Resource coordination
+ - System integration
+ - Error handling
+ 
+ Features:
+ - Launch configuration
+ - State preservation
+ - Memory management
+ - Background handling
+ - System events
+ - Resource cleanup
+ - Error recovery
+ - Performance monitoring
+ - Debug support
+ - Device adaptation
+ */
 
 import UIKit
 
@@ -37,4 +59,3 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
 }
-

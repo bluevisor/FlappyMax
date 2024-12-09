@@ -4,6 +4,32 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Main menu scene for FlappyMax
+ 
+ Responsibilities:
+ - Game entry point management
+ - Menu navigation control
+ - Scene transition handling
+ - UI layout management
+ - Game initialization
+ 
+ Features:
+ - Start game button
+ - Settings access
+ - Animated title
+ - Version display
+ - Copyright info
+ - Device-specific layouts
+ - Smooth transitions
+ - Sound initialization
+ - Clean UI design
+ - Responsive controls
+ - Visual feedback
+ - Error handling
+ - State management
+ - Easy navigation
+ */
 
 import SpriteKit
 import AVFoundation
@@ -20,6 +46,9 @@ class MainMenuScene: SKScene {
         print("- Screen Size: \(UIScreen.main.bounds.size)")
         print("- Scale Factor: \(GameConfig.deviceScaleFactor)")
         
+        // Setup audio first
+        preloadAudio()
+        
         // Get safe area insets using the modern API
         let safeAreaInsets: UIEdgeInsets
         if let windowScene = view.window?.windowScene {
@@ -29,8 +58,6 @@ class MainMenuScene: SKScene {
         }
         print("- Safe Area Insets: \(safeAreaInsets)")
         print("=========================\n")
-        
-        preloadAudio()
         
         // Create background first to avoid frame drops
         let background = BackgroundManager.shared.createBackground(size: self.size)
@@ -42,11 +69,13 @@ class MainMenuScene: SKScene {
         let titlePositionOffset: CGFloat = ifIphone ? 69 : 130
         let titleOutScale: CGFloat = ifIphone ? 0.6 : 0.75
         let titlePosition = CGPoint(x: frame.midX, y: frame.midY + titlePositionOffset)
-        let versionLabelFontSize: CGFloat = ifIphone ? 18 : 22
-        let versionLabelPositionOffset: CGFloat = ifIphone ? -40 : -50
-        let startButtonPositionOffset: CGFloat = ifIphone ? -110 : -220
-        let startButtonFontSize: CGFloat = ifIphone ? 42 : 52
-        let copyrightLabelFontSize: CGFloat = ifIphone ? 12 : 14
+        let versionLabelFontSize: CGFloat = ifIphone ? 16 : 20
+        let versionLabelPositionOffset: CGFloat = ifIphone ? -36 : -40
+        let startButtonPositionOffset: CGFloat = ifIphone ? -90 : -200
+        let settingsButtonPositionOffset: CGFloat = ifIphone ? -130 : -300
+        let startButtonFontSize: CGFloat = ifIphone ? 32 : 64
+        let settingsLabelFontSize: CGFloat = ifIphone ? 24 : 42
+        let copyrightLabelFontSize: CGFloat = ifIphone ? 10 : 12
         
         // Create and cache textures
         let titleTexture = SKTexture(imageNamed: "flappymax_title_white")
@@ -104,12 +133,25 @@ class MainMenuScene: SKScene {
         startButton.alpha = 0.0
         addChild(startButton)
 
+        // Settings button
+        let settingsButton = SKLabelNode(fontNamed: "Helvetica-bold")
+        settingsButton.text = "Settings"
+        settingsButton.fontSize = settingsLabelFontSize
+        settingsButton.fontColor = .white
+        settingsButton.position = CGPoint(x: frame.midX, y: frame.midY + settingsButtonPositionOffset)
+        settingsButton.name = "SettingsButton"
+        settingsButton.alpha = 0.0
+        addChild(settingsButton)
+
         // Copyright label
         let copyrightLabel = SKLabelNode(fontNamed: "Helvetica-UltraLight")
         copyrightLabel.text = "Copyright 2024 Bucaa Studio. All Rights Reserved."
         copyrightLabel.fontColor = UIColor(hex: "#666666")
         copyrightLabel.fontSize = copyrightLabelFontSize
-        copyrightLabel.position = CGPoint(x: frame.midX, y: 24)
+        copyrightLabel.position = CGPoint(
+            x: frame.midX,
+            y: view.safeAreaInsets.bottom + 5
+        )
         copyrightLabel.alpha = 0.0
         addChild(copyrightLabel)
 
@@ -120,6 +162,7 @@ class MainMenuScene: SKScene {
         let labelsFadeInSequence = SKAction.sequence([delay, labelsFadeIn])
         versionLabel.run(labelsFadeInSequence)
         startButton.run(labelsFadeInSequence)
+        settingsButton.run(labelsFadeInSequence)
         copyrightLabel.run(labelsFadeInSequence)
 
         // Breathing effect for start button
@@ -143,11 +186,6 @@ class MainMenuScene: SKScene {
     }
 
     private func preloadAudio() {
-        if let startSoundURL = Bundle.main.url(forResource: "game_start", withExtension: "mp3") {
-            audioPlayer = try? AVAudioPlayer(contentsOf: startSoundURL)
-            audioPlayer?.prepareToPlay()
-        }
-
         if let swooshSoundURL = Bundle.main.url(forResource: "swoosh", withExtension: "mp3") {
             swooshSoundEffect = try? AVAudioPlayer(contentsOf: swooshSoundURL)
             swooshSoundEffect?.prepareToPlay()
@@ -160,11 +198,13 @@ class MainMenuScene: SKScene {
         let nodesAtLocation = nodes(at: location)
         
         if nodesAtLocation.contains(where: { $0.name == "StartButton" }) {
-            audioPlayer?.play()
-
             let gameScene = GameScene(size: self.size)
             gameScene.scaleMode = .aspectFill
             view?.presentScene(gameScene, transition: SKTransition.fade(withDuration: 1.0))
+        } else if nodesAtLocation.contains(where: { $0.name == "SettingsButton" }) {
+            let settingsScene = SettingsScene(size: self.size)
+            settingsScene.scaleMode = .aspectFill
+            view?.presentScene(settingsScene, transition: SKTransition.fade(withDuration: 0.3))
         }
     }
 

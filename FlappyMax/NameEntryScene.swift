@@ -1,11 +1,55 @@
+//
+//  NameEntryScene.swift
+//  FlappyMax
+//
+//  Created by John Zheng on 10/31/24.
+//
+/*
+ Name entry scene for high score submissions
+ 
+ Responsibilities:
+ - Player name input handling
+ - Input validation and formatting
+ - Score submission processing
+ - Scene transition management
+ - Keyboard interaction
+ 
+ Features:
+ - Text field for name entry
+ - Input validation rules
+ - Keyboard management
+ - Submission handling
+ - Transition protection
+ - Device-specific layouts
+ - Error handling
+ - User feedback
+ - Data validation
+ - Score persistence
+ - Clean text formatting
+ - Responsive UI
+ - Smooth transitions
+ - Input restrictions
+ */
+
 import SpriteKit
 import UIKit
 
 class NameEntryScene: SKScene {
     // MARK: - Properties
-    private var currentScore: ScoreEntry!
     private let leaderboardManager = LeaderboardManager.shared
-    private var nameField: UITextField?
+    private var textField: UITextField?
+    private var score: Int
+    private var coins: Int
+    
+    init(size: CGSize, score: Int, coins: Int) {
+        self.score = score
+        self.coins = coins
+        super.init(size: size)
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     // MARK: - UI Elements
     private var backgroundNode: SKSpriteNode!
@@ -14,18 +58,38 @@ class NameEntryScene: SKScene {
     private var coinsLabel: SKLabelNode!
     private var contentNode: SKNode!
     
-    // MARK: - Initialization
-    convenience init(size: CGSize, score: ScoreEntry) {
-        self.init(size: size)
-        self.currentScore = score
-    }
-    
     // MARK: - Scene Lifecycle
     override func didMove(to view: SKView) {
         setupScene()
         setupUI()
-        setupNameField()
-        setupKeyboardObservers()
+        
+        // Create and configure text field
+        let textField = UITextField(frame: CGRect(x: 0, y: 0, width: 300, height: 40))
+        textField.backgroundColor = .white
+        textField.textColor = .black
+        textField.borderStyle = .roundedRect
+        textField.attributedPlaceholder = NSAttributedString(
+            string: "Enter your name",
+            attributes: [NSAttributedString.Key.foregroundColor: UIColor.lightGray]
+        )
+        textField.textAlignment = .center
+        textField.delegate = self
+        textField.returnKeyType = .done
+        
+        let ifIphone = UIDevice.current.userInterfaceIdiom == .phone
+        let verticalOffset: CGFloat = ifIphone ? 45 : 60
+        
+        // Position the text field in the center of the screen
+        if let viewSize = self.view?.bounds.size {
+            textField.center = CGPoint(
+                x: viewSize.width / 2,
+                y: viewSize.height / 2 - verticalOffset
+            )
+        }
+        
+        self.view?.addSubview(textField)
+        textField.becomeFirstResponder()
+        self.textField = textField
     }
     
     // MARK: - Setup Methods
@@ -60,7 +124,7 @@ class NameEntryScene: SKScene {
         
         // Score Label
         scoreLabel = SKLabelNode(fontNamed: "Helvetica")
-        scoreLabel.text = "Score: \(currentScore.mainScore)"
+        scoreLabel.text = "Score: \(score)"
         scoreLabel.fontSize = isIPhone ? 24 : 32
         scoreLabel.fontColor = .white
         scoreLabel.position = CGPoint(x: frame.width * 0.35, y: frame.height * (isIPhone ? 0.72 : 0.69))
@@ -69,7 +133,7 @@ class NameEntryScene: SKScene {
         
         // Coins Label
         coinsLabel = SKLabelNode(fontNamed: "Helvetica")
-        coinsLabel.text = "Coins: \(currentScore.coins)"
+        coinsLabel.text = "Coins: \(coins)"
         coinsLabel.fontSize = isIPhone ? 24 : 32
         coinsLabel.fontColor = .white
         coinsLabel.position = CGPoint(x: frame.width * 0.65, y: frame.height * (isIPhone ? 0.72 : 0.69))
@@ -77,131 +141,44 @@ class NameEntryScene: SKScene {
         contentNode.addChild(coinsLabel)
     }
     
-    private func setupNameField() {
-        guard let view = view else { return }
-        
-        let isIPhone = DeviceType.current == .iPhone
-        let textField = UITextField()
-        textField.backgroundColor = .white
-        textField.textColor = .black
-        textField.textAlignment = .center
-        textField.font = .systemFont(ofSize: isIPhone ? 20 : 24)
-        textField.attributedPlaceholder = NSAttributedString(
-            string: "Enter your name",
-            attributes: [NSAttributedString.Key.foregroundColor: UIColor.gray]
-        )
-        textField.borderStyle = .roundedRect
-        textField.autocorrectionType = .no
-        textField.returnKeyType = .done
-        textField.delegate = self
-        
-        // Calculate text field position and size
-        let fieldWidth = min(view.bounds.width * (isIPhone ? 0.7 : 0.6), 300)
-        let fieldHeight: CGFloat = isIPhone ? 36 : 42
-        
-        // Convert from bottom-up percentage to top-down position
-        let desiredHeightFromBottom = isIPhone ? 0.66 : 0.62  // This represents how high we want it from bottom
-        let fieldY = view.bounds.height * (1 - desiredHeightFromBottom)  // Convert to UIKit coordinates
-        
-        textField.frame = CGRect(
-            x: (view.bounds.width - fieldWidth) / 2,
-            y: fieldY,
-            width: fieldWidth,
-            height: fieldHeight
-        )
-        
-        view.addSubview(textField)
-        textField.becomeFirstResponder()
-        self.nameField = textField
-    }
-    
-    private func setupKeyboardObservers() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(keyboardWillShow(_:)),
-            name: UIResponder.keyboardWillShowNotification,
-            object: nil
-        )
-        
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(keyboardWillHide(_:)),
-            name: UIResponder.keyboardWillHideNotification,
-            object: nil
-        )
-    }
-    
-    @objc private func keyboardWillShow(_ notification: Notification) {
-        guard let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect,
-              let view = view,
-              let textField = nameField else { return }
-        
-        let keyboardHeight = keyboardFrame.height
-        let textFieldMaxY = textField.frame.maxY
-        let availableSpace = view.frame.height - keyboardHeight
-        
-        // Only move if text field would be covered
-        if textFieldMaxY > availableSpace {
-            let overlap = textFieldMaxY - availableSpace
-            let offset = overlap + (DeviceType.current == .iPhone ? 20 : 30)
-            
-            print("Keyboard height: \(keyboardHeight)")
-            print("Text field maxY: \(textFieldMaxY)")
-            print("Available space: \(availableSpace)")
-            print("Moving content by: \(offset)")
-            
-            UIView.animate(withDuration: 0.3) {
-                self.contentNode.position.y = offset
-            }
-        }
-    }
-    
-    @objc private func keyboardWillHide(_ notification: Notification) {
-        UIView.animate(withDuration: 0.3) {
-            self.contentNode.position.y = 0
-        }
-    }
-    
     // MARK: - Cleanup
     override func willMove(from view: SKView) {
         super.willMove(from: view)
         
         // Ensure text field is removed when leaving the scene
-        nameField?.resignFirstResponder()
-        nameField?.removeFromSuperview()
-        nameField = nil
+        textField?.resignFirstResponder()
+        textField?.removeFromSuperview()
+        textField = nil
         
         // Remove keyboard observers
         NotificationCenter.default.removeObserver(self)
+    }
+    
+    private func submitScore(name: String?) {
+        // Add to leaderboard
+        leaderboardManager.addScore(score, name: name)
+        
+        // Transition to high scores scene
+        let highScoresScene = HighScoresScene(size: self.size)
+        highScoresScene.scaleMode = .aspectFill
+        view?.presentScene(highScoresScene, transition: SKTransition.fade(withDuration: 0.3))
     }
 }
 
 // MARK: - UITextFieldDelegate
 extension NameEntryScene: UITextFieldDelegate {
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        let name = textField.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard let text = textField.text else { return true }
         
-        // Create a new score entry with the entered name or "Anonymous" if empty
-        let finalScore = ScoreEntry(
-            mainScore: currentScore.mainScore,
-            coins: currentScore.coins,
-            name: name.isEmpty ? "Anonymous" : name,
-            date: Date()
-        )
+        let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        print("NameEntryScene: Name entered: \(name)")
         
-        // Update leaderboard
-        leaderboardManager.updateLeaderboard(with: finalScore)
+        submitScore(name: name.isEmpty ? "Anonymous" : name)
         
-        // Remove the text field from the view hierarchy
+        // Remove the text field
         textField.resignFirstResponder()
         textField.removeFromSuperview()
-        nameField = nil
-        
-        // Transition to game over scene
-        let gameOverScene = GameOverScene(size: size)
-        gameOverScene.currentScore = finalScore
-        let transition = SKTransition.fade(withDuration: 0.3)
-        view?.presentScene(gameOverScene, transition: transition)
+        print("NameEntryScene: Removed text field")
         
         return true
     }

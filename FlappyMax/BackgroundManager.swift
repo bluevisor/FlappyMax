@@ -4,6 +4,28 @@
 //
 //  Created by John Zheng on 10/31/24.
 //
+/*
+ Background management system for FlappyMax
+ 
+ Responsibilities:
+ - Background layer management
+ - Parallax scrolling effects
+ - Memory optimization
+ - Visual consistency
+ - Performance monitoring
+ 
+ Features:
+ - Multi-layer parallax
+ - Seamless scrolling
+ - Sprite recycling
+ - Memory efficiency
+ - Dynamic scaling
+ - Performance optimizations
+ - Device adaptation
+ - Smooth animations
+ - Resource management
+ - State handling
+ */
 
 import SpriteKit
 

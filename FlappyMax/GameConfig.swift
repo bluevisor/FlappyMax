@@ -7,35 +7,27 @@
 /*
  Configuration manager for FlappyMax game
  
- This file manages all device-specific and gameplay configurations including:
+ Responsibilities:
+ - Device-specific scaling and adaptation
+ - Physics parameters and collision settings
+ - Game balancing and difficulty settings
+ - UI layout and positioning
+ - Asset configuration and management
  
- Device Detection:
- - Detects device type (iPhone/iPad/other)
- - Provides device-specific scaling factors
- 
- Sprite Scaling:
- - Manages sprite sizes for different devices
- - Handles scaling for: hero, poles, floor, coins, burgers, UI elements
- 
- Game Metrics:
- - Screen layout and margins
- - Collision boundaries
- - UI positioning
- - Gameplay element spacing
- 
- Physics Parameters:
- - Gravity settings
- - Jump impulse force
- - Game speed
- - Movement parameters
- 
- Adaptive Sizing:
- - Dynamic texture scaling
- - Font size adaptation
- - Screen-size based adjustments
+ Features:
+ - Dynamic sprite scaling for different devices
+ - Configurable physics parameters (gravity, impulse)
+ - Adaptive font sizing and UI scaling
+ - Game speed and difficulty controls
+ - Screen layout and margin calculations
+ - Collision boundary definitions
+ - Movement and animation timing settings
+ - Performance optimization settings
+ - Resource path management
+ - Debug configuration options
  
  Usage:
- Access configurations through GameConfig.{Category}.{parameter}
+ Access through GameConfig.{parameter}
  Example: GameConfig.Physics.gravity
  */
 
@@ -43,11 +35,12 @@ import Foundation
 import UIKit
 import SpriteKit
 
+// MARK: - Shared Enums
 enum DeviceType {
     case iPhone
     case iPad
     case other
-
+    
     static var current: DeviceType {
         let screen = UIScreen.main.bounds
         let maxDimension = max(screen.width, screen.height)
@@ -60,17 +53,32 @@ enum DeviceType {
     }
 }
 
+enum GameOverReason {
+    case collision
+    case outOfEnergy
+}
+
+enum SpriteType {
+    case hero
+    case pole
+    case floor
+    case coin
+    case burger
+    case label
+    case custom(scale: CGFloat)
+}
+
+// MARK: - Game Configuration
 enum GameConfig {
     static let baseScreenWidth: CGFloat = 430
     static let baseScreenHeight: CGFloat = 932
     
-    // Introduce a global scale that applies on top of all other scaling factors
     static let globalGameScale: CGFloat = 1.0 // Adjust this as needed globally
 
     struct Scales {
         static var hero: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 1.2
+            case .iPhone: return 1.25
             case .iPad: return 1.25
             case .other: return 1.25
             }
@@ -79,7 +87,7 @@ enum GameConfig {
         static var pole: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 3.2
-            case .iPad: return 3.8
+            case .iPad: return 3.6
             case .other: return 3.8
             }
         }
@@ -94,17 +102,17 @@ enum GameConfig {
         
         static var coin: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 0.4
-            case .iPad: return 0.8
-            case .other: return 0.4
+            case .iPhone: return 0.48
+            case .iPad: return 0.48
+            case .other: return 0.48
             }
         }
         
         static var burger: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 1.6
-            case .iPad: return 2.8
-            case .other: return 1.6
+            case .iPhone: return 2.0
+            case .iPad: return 2.0
+            case .other: return 2.0
             }
         }
 
@@ -150,9 +158,9 @@ enum GameConfig {
         
         static var coinIcon: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 0.8
-            case .iPad: return 0.4
-            case .other: return 1.0
+            case .iPhone: return 0.5
+            case .iPad: return 0.6
+            case .other: return 0.5
             }
         }
     }
@@ -202,37 +210,29 @@ enum GameConfig {
 
         static var polePairGap: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return heroBaseSize.height * 3.2
-            case .iPad: return heroBaseSize.height * 3.5
-            case .other: return heroBaseSize.height * 3.5
+            case .iPhone: return 165.0
+            case .iPad: return 175.0
+            case .other: return 165.0
             }
         }
-
-        static var poleSpacing: CGFloat {
-            switch DeviceType.current {
-            case .iPhone: return screenSize.width * 0.5
-            case .iPad: return screenSize.width * 0.4
-            case .other: return screenSize.width * 0.5
-            }
-        }
-
-        static var scoreZoneWidth: CGFloat {
-            return heroBaseSize.width * 0.2
-        }
+        
+        static let poleMargin: CGFloat = 50.0
+        static let poleSpacing: CGFloat = screenSize.width / 2.0
+        static let scoreZoneWidth: CGFloat = 10.0
 
         static var polePairMinY: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return heroBaseSize.height * 3.0
-            case .iPad: return heroBaseSize.height * 5.0
-            case .other: return heroBaseSize.height * 3.0
+            case .iPhone: return heroBaseSize.height * 2.0
+            case .iPad: return heroBaseSize.height * 2.0
+            case .other: return heroBaseSize.height * 2.0
             }
         }
 
         static var polePairMaxY: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return screenSize.height - (heroBaseSize.height * 3.0)
-            case .iPad: return screenSize.height - (heroBaseSize.height * 3.5)
-            case .other: return screenSize.height - (heroBaseSize.height * 3.0)
+            case .iPhone: return screenSize.height - (heroBaseSize.height * 2.0)
+            case .iPad: return screenSize.height - (heroBaseSize.height * 2.0)
+            case .other: return screenSize.height - (heroBaseSize.height * 2.0)
             }
         }
 
@@ -313,7 +313,6 @@ enum GameConfig {
         return size * deviceScaleFactor * globalGameScale
     }
 
-    // Calculate final scale for a given sprite type
     static func finalScale(for spriteType: SpriteType) -> CGFloat {
         return globalGameScale * deviceScaleFactor * getDefaultScale(for: spriteType)
     }
@@ -330,7 +329,6 @@ enum GameConfig {
     }
     
     static func adaptiveFontSize(_ baseSize: CGFloat) -> CGFloat {
-        // Incorporate global scaling into font sizes as well
         return baseSize * deviceScaleFactor * globalGameScale * Scales.label
     }
     
@@ -345,14 +343,4 @@ enum GameConfig {
         case .custom(let scale): return scale
         }
     }
-}
-
-enum SpriteType {
-    case hero
-    case pole
-    case floor
-    case coin
-    case burger
-    case label
-    case custom(scale: CGFloat)
 }
