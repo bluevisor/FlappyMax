@@ -455,9 +455,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(hero)
         
         // Enable physics after a short delay
-        let enablePhysicsAction = SKAction.run { [weak self] in
-            self?.hero.physicsBody?.isDynamic = true
-            print("Hero physics enabled - Current position: \(String(describing: self?.hero.position))")
+        let enablePhysicsAction = SKAction.run { [self] in
+            self.hero.physicsBody?.isDynamic = true
+            print("Hero physics enabled - Current position: \(String(describing: self.hero.position))")
         }
         
         hero.run(SKAction.sequence([
@@ -555,7 +555,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 let centerY = GameConfig.Metrics.floorHeight + (frame.height - GameConfig.Metrics.floorHeight)/2
                 
                 // Choose a random coin pattern for guaranteed spawns
-                let patterns: [CollectiblePattern] = [.single, .v2, .triangle, .square, .cross, .star]
+                let patterns: [CollectiblePattern] = [.single, .triangle, .square, .cross, .star, .diagonal3, .diagonal5, .circle, .v2, .v3, .v4, .v5, .h2, .h3, .h4, .h5]
                 let pattern = patterns[Int.random(in: 0..<patterns.count)]
                 spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: pattern, isBurger: false)
             }
@@ -582,7 +582,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 // Random pattern for coins only
                 let rand = Int.random(in: 0...9)
                 if rand < 9 {  // 90% chance to spawn a pattern
-                    let patterns: [CollectiblePattern] = [.single, .v2, .triangle, .square, .cross, .star]
+                    let patterns: [CollectiblePattern] = [
+                        .single, .triangle, .square, .cross, .star,
+                        .diagonal3, .diagonal5, .circle,
+                        .v2,.v3, .v4, .v5,
+                        .h2, .h3, .h4, .h5
+                    ]
                     if let randomPattern = patterns.randomElement() {
                         spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: randomPattern, isBurger: false)
                     }
@@ -635,14 +640,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Move collectibles (coins and burgers)
             enumerateChildNodes(withName: "coin") { node, _ in
                 node.position.x -= gameSpeed
-                if node.position.x < -self.frame.width/2 {
+                // Only recycle if the coin is well past the left edge of the screen
+                if node.position.x < -self.frame.width {
+                    if let coin = node as? SKSpriteNode, !Collectable.shared.isCollected(coin) {
+                        print("Recycling uncollected coin at x: \(node.position.x)")
+                    }
                     Collectable.shared.recycleCollectible(node as! SKSpriteNode)
                 }
             }
             
             enumerateChildNodes(withName: "burger") { node, _ in
                 node.position.x -= gameSpeed
-                if node.position.x < -self.frame.width/2 {
+                // Only recycle if the burger is well past the left edge of the screen
+                if node.position.x < -self.frame.width {
+                    if let burger = node as? SKSpriteNode, !Collectable.shared.isCollected(burger) {
+                        print("Recycling uncollected burger at x: \(node.position.x)")
+                    }
                     Collectable.shared.recycleCollectible(node as! SKSpriteNode)
                 }
             }
@@ -697,7 +710,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let heroBody = contact.bodyA.categoryBitMask == PhysicsCategory.hero ? contact.bodyA : contact.bodyB
         let otherBody = heroBody == contact.bodyA ? contact.bodyB : contact.bodyA
         
-        print("Collision detected - Hero position: \(hero.position.y), Other body category: \(otherBody.categoryBitMask)")
+        print("Collision detected - Hero position: \(hero.position.x), \(hero.position.y), Other body category: \(otherBody.categoryBitMask)")
         
         switch otherBody.categoryBitMask {
         case PhysicsCategory.scoreZone:
@@ -711,20 +724,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             
         case PhysicsCategory.coin:
-            if let coin = otherBody.node as? SKSpriteNode {
-                Collectable.shared.recycleCollectible(coin)
+            if let coin = otherBody.node as? SKSpriteNode,
+               !Collectable.shared.isCollected(coin) {
+                // Immediately disable physics to prevent multiple collisions
+                coin.physicsBody = nil
+                
+                Collectable.shared.markAsCollected(coin)
                 coinScore += 1
                 coinScoreLabel.text = "\(coinScore)"
                 _ = playSoundEffect("coin")
+                
+                // Fade out and move up animation
+                let fadeOut = SKAction.fadeOut(withDuration: 0.3)
+                let moveUp = SKAction.moveBy(x: 0, y: 50, duration: 0.3)
+                let recycle = SKAction.run {
+                    Collectable.shared.recycleCollectible(coin)
+                }
+                coin.run(SKAction.sequence([SKAction.group([fadeOut, moveUp]), recycle]))
             }
             
         case PhysicsCategory.burger:
-            if let burger = otherBody.node as? SKSpriteNode {
-                Collectable.shared.recycleCollectible(burger)
+            if let burger = otherBody.node as? SKSpriteNode,
+               !Collectable.shared.isCollected(burger) {
+                // Immediately disable physics to prevent multiple collisions
+                burger.physicsBody = nil
+                
+                Collectable.shared.markAsCollected(burger)
                 burgerScore += 1
                 currentStamina = maxStamina  // Full stamina restoration
                 updateStaminaBar()
                 _ = playSoundEffect("burger")
+                
+                // Fade out and move up animation
+                let fadeOut = SKAction.fadeOut(withDuration: 0.3)
+                let moveUp = SKAction.moveBy(x: 0, y: 50, duration: 0.3)
+                let recycle = SKAction.run {
+                    Collectable.shared.recycleCollectible(burger)
+                }
+                burger.run(SKAction.sequence([SKAction.group([fadeOut, moveUp]), recycle]))
             }
             
         case PhysicsCategory.pole, PhysicsCategory.floor:
@@ -736,6 +773,200 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    private func spawnCollectiblePattern(at basePosition: CGPoint, pattern: CollectiblePattern, isBurger: Bool) {
+        let positions = pattern.getRelativePositions()
+        
+        for relativePos in positions {
+            let collectible: SKSpriteNode?
+            if isBurger {
+                collectible = Collectable.shared.getPooledBurger()
+            } else {
+                collectible = Collectable.shared.getPooledCoin()
+            }
+            
+            if let collectible = collectible {
+                let finalPos = CGPoint(
+                    x: basePosition.x + relativePos.x,
+                    y: basePosition.y + relativePos.y
+                )
+                
+                collectible.position = finalPos
+                if collectible.parent == nil {  // Only add if not already in scene
+                    addChild(collectible)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Grid System
+    // Grid system constants
+    private let gridSpacing: CGFloat = 900.0  // Distance between pole sets
+    private let baseHeight: CGFloat = 0.0     // Center height for random variations
+    private let heightVariation: CGFloat = 200.0  // Maximum height variation up/down
+    private let initialX: CGFloat = 1000.0    // Starting X position for first pole
+
+    private func spawnPoleSet() {
+        // Calculate grid-based position
+        let poleX = initialX + (CGFloat(poleCount - 1) * gridSpacing)
+        let randomY = baseHeight + CGFloat.random(in: -heightVariation..<heightVariation)
+        
+        // Create and position pole set
+        if let poleSet = Pole.shared.getPooledPoleSet() {
+            poleSet.position = CGPoint(x: poleX, y: randomY)
+            if poleSet.parent == nil {
+                addChild(poleSet)
+            }
+            
+            // Spawn collectibles at the same grid position
+            let collectibleBasePosition = CGPoint(x: poleX, y: randomY)
+            
+            if poleCount % 5 == 0 {
+                // Every 5th grid, spawn a single burger
+                spawnCollectiblePattern(at: collectibleBasePosition, pattern: .single, isBurger: true)
+            } else {
+                // Otherwise spawn a random coin pattern
+                let patterns: [CollectiblePattern] = [
+                    .single, .triangle, .square, .cross, .star,
+                    .diagonal3, .diagonal5, .circle,
+                    .v2,.v3, .v4, .v5,
+                    .h2, .h3, .h4, .h5
+                ]
+                if let randomPattern = patterns.randomElement() {
+                    spawnCollectiblePattern(at: collectibleBasePosition, pattern: randomPattern, isBurger: false)
+                }
+            }
+        }
+        
+        poleCount += 1
+    }
+    
+    // MARK: - Collectible Patterns
+    enum CollectiblePattern {
+        case single
+        case triangle
+        case square
+        case cross
+        case star
+        case diagonal3
+        case diagonal5
+        case circle
+        case v2
+        case v3
+        case v4
+        case v5
+        case h2
+        case h3
+        case h4
+        case h5
+        
+        // Get relative positions for each pattern
+        func getRelativePositions() -> [(x: CGFloat, y: CGFloat)] {
+            let unit: CGFloat = DeviceType.current == .iPhone ? 70.0 : 120.0  // Base unit for spacing
+            
+            switch self {
+            // Original patterns
+            case .single:
+                return [(0, 0)]  // Center
+            case .triangle:
+                return [(0, unit),  // Top
+                       (-unit, -unit), // Bottom left
+                       (unit, -unit)]  // Bottom right
+            case .square:
+                return [(unit, unit),    // Top right
+                       (-unit, unit),    // Top left
+                       (-unit, -unit),   // Bottom left
+                       (unit, -unit)]    // Bottom right
+            case .cross:
+                return [(0, unit),     // Top
+                       (-unit, 0),     // Left
+                       (0, 0),         // Center
+                       (unit, 0),      // Right
+                       (0, -unit)]     // Bottom
+            case .star:
+                return [(0, unit*1.5),           // Top
+                       (unit, unit/2),           // Top right
+                       (unit, -unit/2),          // Bottom right
+                       (0, -unit*1.5),           // Bottom
+                       (-unit, -unit/2),         // Bottom left
+                       (-unit, unit/2)]          // Top left
+            case .diagonal3:
+                return [
+                    (-unit, unit),
+                    (0, 0),
+                    (unit, -unit)
+                ]
+            case .diagonal5:
+                return [
+                    (-unit * 2, unit * 2),
+                    (-unit, unit),
+                    (0, 0),
+                    (unit, -unit),
+                    (unit * 2, -unit * 2)
+                ]
+            case .circle:
+                let radius = unit
+                let points = 8  // Number of points in the circle
+                return (0..<points).map { i in
+                    let angle = CGFloat(i) * 2 * .pi / CGFloat(points)
+                    return (
+                        radius * cos(angle),
+                        radius * sin(angle)
+                    )
+                }
+            case .v2:
+                return [(0, unit), (0, -unit)]  // High and low
+            case .v3:
+                return [
+                    (0, unit),
+                    (0, 0),
+                    (0, -unit)
+                ]
+            case .v4:
+                return [
+                    (0, unit * 1.5),
+                    (0, unit * 0.5),
+                    (0, -unit * 0.5),
+                    (0, -unit * 1.5)
+                ]
+            case .v5:
+                return [
+                    (0, unit * 2),
+                    (0, unit),
+                    (0, 0),
+                    (0, -unit),
+                    (0, -unit * 2)
+                ]
+            case .h2:
+                return [
+                    (-unit * 0.5, 0),
+                    (unit * 0.5, 0)
+                ]
+            case .h3:
+                return [
+                    (-unit, 0),
+                    (0, 0),
+                    (unit, 0)
+                ]
+            case .h4:
+                return [
+                    (-unit * 1.5, 0),
+                    (-unit * 0.5, 0),
+                    (unit * 0.5, 0),
+                    (unit * 1.5, 0)
+                ]
+            case .h5:
+                return [
+                    (-unit * 2, 0),
+                    (-unit, 0),
+                    (0, 0),
+                    (unit, 0),
+                    (unit * 2, 0)
+                ]
+            }
+        }
+    }
+    
+    // MARK: - Game Over
     private func gameOver(reason: GameOverReason) {
         if isGameOver { return }
         isGameOver = true
@@ -786,202 +1017,5 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         mainScoreLabel.text = "0"
         coinScoreLabel.text = "0"
         updateStaminaBar()
-    }
-    
-    // MARK: - Grid System
-    // Grid system constants
-    private let gridSpacing: CGFloat = 900.0  // Distance between pole sets
-    private let baseHeight: CGFloat = 0.0     // Center height for random variations
-    private let heightVariation: CGFloat = 200.0  // Maximum height variation up/down
-    private let initialX: CGFloat = 1000.0    // Starting X position for first pole
-
-    private func spawnPoleSet() {
-        // Calculate grid-based position
-        let poleX = initialX + (CGFloat(poleCount - 1) * gridSpacing)
-        let randomY = baseHeight + CGFloat.random(in: -heightVariation..<heightVariation)
-        
-        // Create and position pole set
-        if let poleSet = Pole.shared.getPooledPoleSet() {
-            poleSet.position = CGPoint(x: poleX, y: randomY)
-            if poleSet.parent == nil {
-                addChild(poleSet)
-            }
-            
-            // Spawn collectibles at the same grid position
-            let collectibleBasePosition = CGPoint(x: poleX, y: randomY)
-            
-            if poleCount % 5 == 0 {
-                // Every 5th grid, spawn a single burger
-                spawnCollectiblePattern(at: collectibleBasePosition, pattern: .single, isBurger: true)
-            } else {
-                // Otherwise spawn a random coin pattern
-                let patterns: [CollectiblePattern] = [
-                    // Original patterns
-                    .single, .v2, .triangle, .square, .cross, .star,
-                    // New patterns
-                    .diagonal3, .diagonal5, .circle,
-                    .v3, .v4, .v5,
-                    .h2, .h3, .h4, .h5
-                ]
-                if let randomPattern = patterns.randomElement() {
-                    spawnCollectiblePattern(at: collectibleBasePosition, pattern: randomPattern, isBurger: false)
-                }
-            }
-        }
-        
-        poleCount += 1
-    }
-    
-    private func spawnCollectiblePattern(at basePosition: CGPoint, pattern: CollectiblePattern, isBurger: Bool) {
-        let positions = pattern.getRelativePositions()
-        
-        for relativePos in positions {
-            let collectible: SKSpriteNode?
-            if isBurger {
-                collectible = Collectable.shared.getPooledBurger()
-            } else {
-                collectible = Collectable.shared.getPooledCoin()
-            }
-            
-            if let collectible = collectible {
-                let finalPos = CGPoint(
-                    x: basePosition.x + relativePos.x,
-                    y: basePosition.y + relativePos.y
-                )
-                
-                collectible.position = finalPos
-                if collectible.parent == nil {  // Only add if not already in scene
-                    addChild(collectible)
-                }
-            }
-        }
-    }
-    
-    // MARK: - Collectible Patterns
-    enum CollectiblePattern {
-        case single
-        case v2     // Vertical 2 (formerly .vertical)
-        case triangle
-        case square
-        case cross
-        case star
-        case diagonal3
-        case diagonal5
-        case circle
-        case v3
-        case v4
-        case v5
-        case h2
-        case h3
-        case h4
-        case h5
-        
-        // Get relative positions for each pattern
-        func getRelativePositions() -> [(x: CGFloat, y: CGFloat)] {
-            let unit: CGFloat = DeviceType.current == .iPhone ? 80.0 : 120.0  // Base unit for spacing
-            
-            switch self {
-            // Original patterns
-            case .single:
-                return [(0, 0)]  // Center
-            case .v2:
-                return [(0, unit), (0, -unit)]  // High and low
-            case .triangle:
-                return [(0, unit),  // Top
-                       (-unit, -unit), // Bottom left
-                       (unit, -unit)]  // Bottom right
-            case .square:
-                return [(unit, unit),    // Top right
-                       (-unit, unit),    // Top left
-                       (-unit, -unit),   // Bottom left
-                       (unit, -unit)]    // Bottom right
-            case .cross:
-                return [(0, unit),     // Top
-                       (-unit, 0),     // Left
-                       (0, 0),         // Center
-                       (unit, 0),      // Right
-                       (0, -unit)]     // Bottom
-            case .star:
-                return [(0, unit*1.5),           // Top
-                       (unit, unit/2),           // Top right
-                       (unit, -unit/2),          // Bottom right
-                       (0, -unit*1.5),           // Bottom
-                       (-unit, -unit/2),         // Bottom left
-                       (-unit, unit/2)]          // Top left
-            
-            // New patterns
-            case .diagonal3:
-                return [
-                    (-unit, unit),
-                    (0, 0),
-                    (unit, -unit)
-                ]
-            case .diagonal5:
-                return [
-                    (-unit * 2, unit * 2),
-                    (-unit, unit),
-                    (0, 0),
-                    (unit, -unit),
-                    (unit * 2, -unit * 2)
-                ]
-            case .circle:
-                let radius = unit
-                let points = 8  // Number of points in the circle
-                return (0..<points).map { i in
-                    let angle = CGFloat(i) * 2 * .pi / CGFloat(points)
-                    return (
-                        radius * cos(angle),
-                        radius * sin(angle)
-                    )
-                }
-            case .v3:
-                return [
-                    (0, unit),
-                    (0, 0),
-                    (0, -unit)
-                ]
-            case .v4:
-                return [
-                    (0, unit * 1.5),
-                    (0, unit * 0.5),
-                    (0, -unit * 0.5),
-                    (0, -unit * 1.5)
-                ]
-            case .v5:
-                return [
-                    (0, unit * 2),
-                    (0, unit),
-                    (0, 0),
-                    (0, -unit),
-                    (0, -unit * 2)
-                ]
-            case .h2:
-                return [
-                    (-unit * 0.5, 0),
-                    (unit * 0.5, 0)
-                ]
-            case .h3:
-                return [
-                    (-unit, 0),
-                    (0, 0),
-                    (unit, 0)
-                ]
-            case .h4:
-                return [
-                    (-unit * 1.5, 0),
-                    (-unit * 0.5, 0),
-                    (unit * 0.5, 0),
-                    (unit * 1.5, 0)
-                ]
-            case .h5:
-                return [
-                    (-unit * 2, 0),
-                    (-unit, 0),
-                    (0, 0),
-                    (unit, 0),
-                    (unit * 2, 0)
-                ]
-            }
-        }
     }
 }

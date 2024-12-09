@@ -78,10 +78,21 @@ class Collectable {
                 coin.removeFromParent()
             }
             
-            // Reset collected state
+            // Reset collected state and visibility
             resetCollectedState(coin)
             coin.userData = nil
-            coin.alpha = 1.0  // Reset visibility
+            coin.alpha = 1.0
+            
+            // Restore physics body
+            let scaledSize = GameConfig.adaptiveSize(
+                for: coin.texture!,
+                spriteType: .coin
+            )
+            coin.physicsBody = SKPhysicsBody(circleOfRadius: scaledSize.width / 2)
+            coin.physicsBody?.isDynamic = false
+            coin.physicsBody?.categoryBitMask = PhysicsCategory.coin
+            coin.physicsBody?.collisionBitMask = 0
+            coin.physicsBody?.contactTestBitMask = PhysicsCategory.hero
             
             // Restart spinning animation using atlas
             coin.removeAllActions()
@@ -109,9 +120,23 @@ class Collectable {
             if burger.parent != nil {
                 burger.removeFromParent()
             }
+            
+            // Reset collected state and visibility
             resetCollectedState(burger)
             burger.userData = nil
-            burger.alpha = 1.0  // Reset visibility
+            burger.alpha = 1.0
+            
+            // Restore physics body
+            let scaledSize = GameConfig.adaptiveSize(
+                for: burger.texture!,
+                spriteType: .burger
+            )
+            burger.physicsBody = SKPhysicsBody(circleOfRadius: scaledSize.width / 2)
+            burger.physicsBody?.isDynamic = false
+            burger.physicsBody?.categoryBitMask = PhysicsCategory.burger
+            burger.physicsBody?.collisionBitMask = 0
+            burger.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+            
             return burger
         }
         return nil
@@ -119,7 +144,18 @@ class Collectable {
     
     func recycleCollectible(_ collectible: SKSpriteNode) {
         collectible.removeFromParent()
-        resetCollectedState(collectible)  // Reset the collected state instead of marking as collected
+        resetCollectedState(collectible)  // Reset the collected state
+        
+        // Restore the physics body
+        let scaledSize = GameConfig.adaptiveSize(
+            for: collectible.texture!,
+            spriteType: collectible.name == "coin" ? .coin : .burger
+        )
+        collectible.physicsBody = SKPhysicsBody(circleOfRadius: scaledSize.width / 2)
+        collectible.physicsBody?.isDynamic = false
+        collectible.physicsBody?.categoryBitMask = collectible.name == "coin" ? PhysicsCategory.coin : PhysicsCategory.burger
+        collectible.physicsBody?.collisionBitMask = 0
+        collectible.physicsBody?.contactTestBitMask = PhysicsCategory.hero
         
         if collectible.name == "coin" {
             coinPool.append(collectible)

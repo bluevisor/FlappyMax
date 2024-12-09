@@ -78,7 +78,7 @@ enum GameConfig {
     struct Scales {
         static var hero: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 1.25
+            case .iPhone: return 1.1
             case .iPad: return 1.25
             case .other: return 1.25
             }
@@ -86,7 +86,7 @@ enum GameConfig {
         
         static var pole: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 3.2
+            case .iPhone: return 3.0
             case .iPad: return 3.6
             case .other: return 3.6  // Match iPad
             }
@@ -96,13 +96,13 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 4.0
             case .iPad: return 5.5
-            case .other: return 4.0
+            case .other: return 5.5
             }
         }
         
         static var coin: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 0.48
+            case .iPhone: return 0.42
             case .iPad: return 0.48
             case .other: return 0.48
             }
@@ -110,7 +110,7 @@ enum GameConfig {
         
         static var burger: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 2.0
+            case .iPhone: return 1.8
             case .iPad: return 2.0
             case .other: return 2.0
             }
@@ -120,7 +120,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 1.0
             case .iPad: return 1.4
-            case .other: return 1.0
+            case .other: return 1.4
             }
         }
         
@@ -128,7 +128,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.5
             case .iPad: return 0.7
-            case .other: return 0.5
+            case .other: return 0.7
             }
         }
         
@@ -136,7 +136,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.4
             case .iPad: return 0.6
-            case .other: return 0.4
+            case .other: return 0.6
             }
         }
         
@@ -144,7 +144,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.5
             case .iPad: return 0.7
-            case .other: return 0.5
+            case .other: return 0.7
             }
         }
         
@@ -152,7 +152,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.4
             case .iPad: return 0.6
-            case .other: return 0.4
+            case .other: return 0.6
             }
         }
         
@@ -160,7 +160,7 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.5
             case .iPad: return 0.6
-            case .other: return 0.5
+            case .other: return 0.6
             }
         }
     }
@@ -210,7 +210,7 @@ enum GameConfig {
 
         static var polePairGap: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 150.0
+            case .iPhone: return 142.0
             case .iPad: return 165.0
             case .other: return 165.0
             }
@@ -274,7 +274,7 @@ enum GameConfig {
     struct Physics {
         static var gravity: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return -7.5
+            case .iPhone: return -8.0
             case .iPad: return -9.5
             case .other: return -9.5  // Match iPad
             }
@@ -282,7 +282,7 @@ enum GameConfig {
 
         static var flapImpulse: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 42.0
+            case .iPhone: return 92.0
             case .iPad: return 142.0
             case .other: return 142.0  // Match iPad
             }

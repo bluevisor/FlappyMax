@@ -117,7 +117,9 @@ class MainMenuScene: SKScene {
 
         // Version label
         let versionLabel = SKLabelNode(fontNamed: "Helvetica-UltraLight")
-        versionLabel.text = "Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")"
+        let versionString = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let buildString = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        versionLabel.text = "Version \(versionString) (\(buildString))"
         versionLabel.fontColor = UIColor(hex: "#bababa")
         versionLabel.fontSize = versionLabelFontSize
         versionLabel.position = CGPoint(x: frame.midX, y: frame.midY + versionLabelPositionOffset)
@@ -126,7 +128,7 @@ class MainMenuScene: SKScene {
 
         // Start button
         let startButton = SKLabelNode(fontNamed: "Helvetica-Bold")
-        startButton.text = "Start Game"
+        startButton.text = "Start"
         startButton.name = "StartButton"
         startButton.fontSize = startButtonFontSize
         startButton.position = CGPoint(x: frame.midX, y: frame.midY + startButtonPositionOffset)
@@ -180,9 +182,6 @@ class MainMenuScene: SKScene {
         
         let breatheAction = SKAction.sequence([breatheIn, breatheOut])
         startButton.run(SKAction.repeatForever(breatheAction))
-        
-        // Play swoosh sound after setup
-        //swooshSoundEffect?.play()
     }
 
     private func preloadAudio() {
