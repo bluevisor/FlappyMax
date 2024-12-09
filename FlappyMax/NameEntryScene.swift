@@ -161,12 +161,19 @@ class NameEntryScene: SKScene {
         LeaderboardManager.shared.addScore(score, name: name, coins: coins)
         
         // Transition to game over scene
-        let gameOverScene = GameOverScene(size: self.size, skipHighScoreCheck: true)
+        transitionToGameOver()
+    }
+    
+    private func transitionToGameOver() {
+        // Create and configure game over scene
+        let gameOverScene = GameOverScene(size: size, skipHighScoreCheck: true)
+        gameOverScene.scaleMode = .aspectFill
         gameOverScene.mainScore = score
         gameOverScene.coinScore = coins
         gameOverScene.gameOverReason = gameOverReason
-        gameOverScene.scaleMode = .aspectFill
-        view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.5))
+        
+        // Present the game over scene
+        view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.3))
     }
 }
 

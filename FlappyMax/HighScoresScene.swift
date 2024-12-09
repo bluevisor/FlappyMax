@@ -62,7 +62,7 @@ class HighScoresScene: SKScene {
                 rankNameLabel.text = "\(index + 1). \(name)"
                 rankNameLabel.fontSize = GameConfig.adaptiveFontSize(20)
                 rankNameLabel.horizontalAlignmentMode = .left
-                rankNameLabel.position = CGPoint(x: -xSpacing * 2.4, y: yPos)
+                rankNameLabel.position = CGPoint(x: -xSpacing * 2.6, y: yPos)
                 scoresNode.addChild(rankNameLabel)
                 
                 // Main score
@@ -78,7 +78,7 @@ class HighScoresScene: SKScene {
                 coinLabel.text = "\(score.coinScore)"
                 coinLabel.fontSize = GameConfig.adaptiveFontSize(20)
                 coinLabel.horizontalAlignmentMode = .right
-                coinLabel.position = CGPoint(x: xSpacing * 2, y: yPos)
+                coinLabel.position = CGPoint(x: xSpacing * 2.3, y: yPos)
                 scoresNode.addChild(coinLabel)
                 
                 // Coin icon
@@ -86,7 +86,7 @@ class HighScoresScene: SKScene {
                 let coinTexture = coinAtlas.textureNamed("coin_12")
                 let coinIcon = SKSpriteNode(texture: coinTexture)
                 coinIcon.size = CGSize(width: GameConfig.adaptiveFontSize(18), height: GameConfig.adaptiveFontSize(18))
-                coinIcon.position = CGPoint(x: xSpacing * 2.2, y: yPos + GameConfig.adaptiveFontSize(18) * 0.4)
+                coinIcon.position = CGPoint(x: xSpacing * 2.5, y: yPos + GameConfig.adaptiveFontSize(18) * 0.4)
                 scoresNode.addChild(coinIcon)
             }
             

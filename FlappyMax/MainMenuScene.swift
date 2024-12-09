@@ -192,19 +192,31 @@ class MainMenuScene: SKScene {
         }
     }
     
+    @objc private func startButtonTapped() {
+        if let view = self.view {
+            let gameScene = GameScene(size: view.bounds.size)
+            gameScene.scaleMode = .aspectFill
+            view.presentScene(gameScene, transition: SKTransition.fade(withDuration: 0.3))
+        }
+    }
+    
+    @objc private func settingsButtonTapped() {
+        if let view = self.view {
+            let settingsScene = SettingsScene(size: view.bounds.size)
+            settingsScene.scaleMode = .aspectFill
+            view.presentScene(settingsScene, transition: SKTransition.fade(withDuration: 0.3))
+        }
+    }
+    
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
         let nodesAtLocation = nodes(at: location)
         
         if nodesAtLocation.contains(where: { $0.name == "StartButton" }) {
-            let gameScene = GameScene(size: self.size)
-            gameScene.scaleMode = .aspectFill
-            view?.presentScene(gameScene, transition: SKTransition.fade(withDuration: 1.0))
+            startButtonTapped()
         } else if nodesAtLocation.contains(where: { $0.name == "SettingsButton" }) {
-            let settingsScene = SettingsScene(size: self.size)
-            settingsScene.scaleMode = .aspectFill
-            view?.presentScene(settingsScene, transition: SKTransition.fade(withDuration: 0.3))
+            settingsButtonTapped()
         }
     }
 

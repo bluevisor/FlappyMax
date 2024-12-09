@@ -427,20 +427,43 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let heroTexture = SKTexture(imageNamed: "max")
         heroTexture.filteringMode = .nearest
         
-        let heroSize = GameConfig.adaptiveSize(for: heroTexture, spriteType: .hero)
-        
         hero = SKSpriteNode(texture: heroTexture)
-        hero.position = CGPoint(x: frame.midX / 2, y: frame.midY)
-        hero.zPosition = 1
-        hero.size = heroSize
-        hero.physicsBody = SKPhysicsBody(texture: heroTexture, size: hero.size)
-        hero.physicsBody?.isDynamic = true
-        hero.physicsBody?.affectedByGravity = true
-        hero.physicsBody?.allowsRotation = false
-        hero.physicsBody?.categoryBitMask = PhysicsCategory.hero
-        hero.physicsBody?.contactTestBitMask = PhysicsCategory.pole | PhysicsCategory.coin | PhysicsCategory.burger
-        hero.physicsBody?.collisionBitMask = PhysicsCategory.pole | PhysicsCategory.floor
+        hero.size = GameConfig.Metrics.heroBaseSize
+        
+        let initialX = frame.width * 0.3
+        let initialY = frame.height * 0.6
+        hero.position = CGPoint(x: initialX, y: initialY)
+        
+        print("Hero setup - Initial position: (\(initialX), \(initialY))")
+        print("Hero setup - Frame dimensions: \(frame.width) x \(frame.height)")
+        print("Hero setup - Hero size: \(hero.size)")
+        print("Hero setup - Floor height: \(GameConfig.Metrics.floorHeight)")
+        
+        hero.zPosition = 3
+        hero.name = "hero"
+        
+        // Create physics body with original texture for better mass distribution
+        let heroBody = SKPhysicsBody(texture: heroTexture, size: hero.size)
+        heroBody.isDynamic = false  // Start with physics disabled
+        heroBody.allowsRotation = false
+        heroBody.mass = 0.22  // Lower mass makes the hero more responsive to impulses
+        heroBody.categoryBitMask = PhysicsCategory.hero
+        heroBody.collisionBitMask = PhysicsCategory.floor | PhysicsCategory.pole
+        heroBody.contactTestBitMask = PhysicsCategory.floor | PhysicsCategory.pole | PhysicsCategory.coin | PhysicsCategory.burger
+        hero.physicsBody = heroBody
+        
         addChild(hero)
+        
+        // Enable physics after a short delay
+        let enablePhysicsAction = SKAction.run { [weak self] in
+            self?.hero.physicsBody?.isDynamic = true
+            print("Hero physics enabled - Current position: \(String(describing: self?.hero.position))")
+        }
+        
+        hero.run(SKAction.sequence([
+            SKAction.wait(forDuration: 1/30),
+            enablePhysicsAction
+        ]))
     }
 
     private func setupFloor() {
@@ -449,6 +472,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         let floorSize = GameConfig.adaptiveSize(for: floorTexture, spriteType: .floor)
         let numberOfFloors = Int(ceil(frame.width / floorSize.width)) + 2
+        
+        print("Floor setup - Frame height: \(frame.height), Floor height: \(GameConfig.Metrics.floorHeight)")
         
         floorNodes = []  // Clear any existing floor nodes
         
@@ -459,10 +484,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             floor.anchorPoint = CGPoint(x: 0, y: 0.5)  // Set anchor point to left edge
             
             // Position floors edge to edge
+            let floorY = GameConfig.Metrics.floorHeight/2
             floor.position = CGPoint(
                 x: floorSize.width * CGFloat(i),
-                y: GameConfig.Metrics.floorHeight/2
+                y: floorY
             )
+            print("Floor \(i) position - X: \(floor.position.x), Y: \(floor.position.y)")
+            
             floor.zPosition = 2
             
             let floorBody = SKPhysicsBody(rectangleOf: floor.size)
@@ -669,6 +697,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let heroBody = contact.bodyA.categoryBitMask == PhysicsCategory.hero ? contact.bodyA : contact.bodyB
         let otherBody = heroBody == contact.bodyA ? contact.bodyB : contact.bodyA
         
+        print("Collision detected - Hero position: \(hero.position.y), Other body category: \(otherBody.categoryBitMask)")
+        
         switch otherBody.categoryBitMask {
         case PhysicsCategory.scoreZone:
             // Only score if we haven't already scored for this zone
@@ -698,10 +728,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             
         case PhysicsCategory.pole, PhysicsCategory.floor:
+            print("Game Over - Collision with \(otherBody.categoryBitMask == PhysicsCategory.pole ? "pole" : "floor") at Y: \(hero.position.y)")
             gameOver(reason: GameOverReason.collision)
             
         default:
-            break
+            print("Unknown collision with category: \(otherBody.categoryBitMask)")
         }
     }
     
@@ -731,7 +762,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         nextScene.scaleMode = .aspectFill
-        view?.presentScene(nextScene, transition: SKTransition.fade(withDuration: 0.5))
+        view?.presentScene(nextScene, transition: SKTransition.fade(withDuration: 0.3))
     }
     
     // MARK: - Reset Game
