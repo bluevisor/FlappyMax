@@ -443,6 +443,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.1;
+				"OTHER_SWIFT_FLAGS[arch=*]" = "-D RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.bucaa.FlappyMax;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

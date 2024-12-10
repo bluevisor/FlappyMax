@@ -41,10 +41,12 @@ class MainMenuScene: SKScene {
     var swooshSoundEffect: AVAudioPlayer?
 
     override func didMove(to view: SKView) {
+        #if !RELEASE
         print("\n=== Device Configuration ===")
         print("- Current Device: \(DeviceType.current)")
         print("- Screen Size: \(UIScreen.main.bounds.size)")
         print("- Scale Factor: \(GameConfig.deviceScaleFactor)")
+        #endif
         
         // Setup audio first
         preloadAudio()
@@ -56,8 +58,10 @@ class MainMenuScene: SKScene {
         } else {
             safeAreaInsets = .zero
         }
+        #if !RELEASE
         print("- Safe Area Insets: \(safeAreaInsets)")
         print("=========================\n")
+        #endif
         
         // Create background first to avoid frame drops
         let background = BackgroundManager.shared.createBackground(size: self.size)

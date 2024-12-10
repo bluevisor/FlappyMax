@@ -183,14 +183,18 @@ extension NameEntryScene: UITextFieldDelegate {
         guard let text = textField.text else { return true }
         
         let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        #if !RELEASE
         print("NameEntryScene: Name entered: \(name)")
+        #endif
         
         submitName(name.isEmpty ? "Anonymous" : name)
         
         // Remove the text field
         textField.resignFirstResponder()
         textField.removeFromSuperview()
+        #if !RELEASE
         print("NameEntryScene: Removed text field")
+        #endif
         
         return true
     }

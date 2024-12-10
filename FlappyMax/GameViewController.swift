@@ -68,7 +68,9 @@ class GameViewController: UIViewController {
         assetsLoaded += 1
         let progress = CGFloat(assetsLoaded) / CGFloat(totalAssets)
         
+        #if !RELEASE
         print("Loading progress: \(Int(progress * 100))%") // Debug loading progress
+        #endif
         
         DispatchQueue.main.async { [weak self] in
             self?.loadingScene?.updateProgress(to: progress)

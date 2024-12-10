@@ -145,7 +145,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             audioPlayers[sound] = []
             for _ in 0..<maxSimultaneousSounds {
                 if createAudioPlayer(for: sound) != nil {
+                    #if !RELEASE
                     print("Successfully cached sound: \(sound)")
+                    #endif
                 }
             }
         }
@@ -181,7 +183,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Try to get the URL for the sound file
         guard let url = Bundle.main.url(forResource: name, withExtension: fileExtension) else {
+            #if !RELEASE
             print("❌ Failed to find sound file: \(name).\(fileExtension)")
+            #endif
             return nil
         }
         
@@ -201,10 +205,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 audioPlayers[name] = [player]
             }
             
+            #if !RELEASE
             print("✅ Loaded sound: \(name).\(fileExtension) (volume: \(Int(volume * 100))%)")
+            #endif
             return player
         } catch {
+            #if !RELEASE
             print("❌ Failed to create audio player for \(name): \(error.localizedDescription)")
+            #endif
             return nil
         }
     }
@@ -217,6 +225,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     override func didMove(to view: SKView) {
+        self.name = "GameScene"
         super.didMove(to: view)
         
         // Hide physics bodies
@@ -224,7 +233,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Log current volume and load sounds
         let currentVolume = UserDefaults.standard.float(forKey: "SFXVolume")
+        #if !RELEASE
         print("Current game volume: \(currentVolume * 100)%")
+        #endif
         loadSoundEffects()
         
         // Play game start sound
@@ -434,10 +445,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let initialY = frame.height * 0.6
         hero.position = CGPoint(x: initialX, y: initialY)
         
+        #if !RELEASE
         print("Hero setup - Initial position: (\(initialX), \(initialY))")
         print("Hero setup - Frame dimensions: \(frame.width) x \(frame.height)")
         print("Hero setup - Hero size: \(hero.size)")
         print("Hero setup - Floor height: \(GameConfig.Metrics.floorHeight)")
+        #endif
         
         hero.zPosition = 3
         hero.name = "hero"
@@ -457,7 +470,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Enable physics after a short delay
         let enablePhysicsAction = SKAction.run { [self] in
             self.hero.physicsBody?.isDynamic = true
+            #if !RELEASE
             print("Hero physics enabled - Current position: \(String(describing: self.hero.position))")
+            #endif
         }
         
         hero.run(SKAction.sequence([
@@ -473,7 +488,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let floorSize = GameConfig.adaptiveSize(for: floorTexture, spriteType: .floor)
         let numberOfFloors = Int(ceil(frame.width / floorSize.width)) + 2
         
+        #if !RELEASE
         print("Floor setup - Frame height: \(frame.height), Floor height: \(GameConfig.Metrics.floorHeight)")
+        #endif
         
         floorNodes = []  // Clear any existing floor nodes
         
@@ -489,7 +506,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 x: floorSize.width * CGFloat(i),
                 y: floorY
             )
+            #if !RELEASE
             print("Floor \(i) position - X: \(floor.position.x), Y: \(floor.position.y)")
+            #endif
             
             floor.zPosition = 2
             
@@ -643,7 +662,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 // Only recycle if the coin is well past the left edge of the screen
                 if node.position.x < -self.frame.width {
                     if let coin = node as? SKSpriteNode, !Collectable.shared.isCollected(coin) {
+                        #if !RELEASE
                         print("Recycling uncollected coin at x: \(node.position.x)")
+                        #endif
                     }
                     Collectable.shared.recycleCollectible(node as! SKSpriteNode)
                 }
@@ -654,7 +675,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 // Only recycle if the burger is well past the left edge of the screen
                 if node.position.x < -self.frame.width {
                     if let burger = node as? SKSpriteNode, !Collectable.shared.isCollected(burger) {
+                        #if !RELEASE
                         print("Recycling uncollected burger at x: \(node.position.x)")
+                        #endif
                     }
                     Collectable.shared.recycleCollectible(node as! SKSpriteNode)
                 }
@@ -710,7 +733,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let heroBody = contact.bodyA.categoryBitMask == PhysicsCategory.hero ? contact.bodyA : contact.bodyB
         let otherBody = heroBody == contact.bodyA ? contact.bodyB : contact.bodyA
         
+        #if !RELEASE
         print("Collision detected - Hero position: \(hero.position.x), \(hero.position.y), Other body category: \(otherBody.categoryBitMask)")
+        #endif
         
         switch otherBody.categoryBitMask {
         case PhysicsCategory.scoreZone:
@@ -720,7 +745,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 mainScore += 1
                 mainScoreLabel.text = "\(mainScore)"
                 scoreZone.userData = ["scored": true]
+                #if !RELEASE
                 print("Score increased: \(mainScore)")
+                #endif
             }
             
         case PhysicsCategory.coin:
@@ -765,11 +792,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             
         case PhysicsCategory.pole, PhysicsCategory.floor:
+            #if !RELEASE
             print("Game Over - Collision with \(otherBody.categoryBitMask == PhysicsCategory.pole ? "pole" : "floor") at Y: \(hero.position.y)")
+            #endif
             gameOver(reason: GameOverReason.collision)
             
         default:
+            #if !RELEASE
             print("Unknown collision with category: \(otherBody.categoryBitMask)")
+            #endif
         }
     }
     
