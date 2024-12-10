@@ -122,6 +122,11 @@ class GameScene: BaseGameScene, SKPhysicsContactDelegate {
     internal let staminaBarHeight: CGFloat = 20.0
     internal var staminaFill: SKSpriteNode!
 
+    // MARK: - Properties
+    private let gameState = GameStateManager.shared
+    private var pauseButton: SKSpriteNode!
+    private var pauseOverlay: SKNode?
+
     override func didMove(to view: SKView) {
         super.didMove(to: view)
         
@@ -138,6 +143,7 @@ class GameScene: BaseGameScene, SKPhysicsContactDelegate {
         // Create UI Layer first
         setupLabels()
         setupStaminaBar()
+        setupPauseButton()
 
         cleanupScene()
         
@@ -152,8 +158,11 @@ class GameScene: BaseGameScene, SKPhysicsContactDelegate {
         
         // Reset current index
         currentIndex = 0
+        
+        // Setup game state callbacks
+        setupGameStateCallbacks()
     }
-
+    
     private func setupLabels() {
         // Main Score Label
         mainScoreLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
@@ -218,6 +227,83 @@ class GameScene: BaseGameScene, SKPhysicsContactDelegate {
         staminaBar.addChild(staminaFill)
     }
 
+    private func setupPauseButton() {
+        // Create pause button
+        pauseButton = SKSpriteNode(imageNamed: "pause_button")
+        pauseButton.name = "pauseButton"
+        pauseButton.size = CGSize(width: 60, height: 60)
+        pauseButton.texture?.filteringMode = .nearest
+        pauseButton.position = CGPoint(x: frame.maxX - 80, y: frame.minY + 80)
+        pauseButton.zPosition = 100
+        addChild(pauseButton)
+    }
+    
+    private func setupGameStateCallbacks() {
+        gameState.onStateChanged = { [weak self] state in
+            self?.handleGameStateChange(state)
+        }
+    }
+    
+    private func handleGameStateChange(_ state: GameStateManager.GameState) {
+        switch state {
+        case .playing:
+            resumeGame()
+        case .paused:
+            pauseGame()
+        case .gameOver:
+            handleGameOver()
+        }
+    }
+    
+    private func pauseGame() {
+        // Create pause overlay if it doesn't exist
+        if pauseOverlay == nil {
+            pauseOverlay = createPauseOverlay()
+            addChild(pauseOverlay!)
+        }
+        
+        // Pause all actions and physics
+        scene?.isPaused = true
+        pauseOverlay?.isPaused = false // Keep overlay responsive
+    }
+    
+    private func resumeGame() {
+        // Remove pause overlay
+        pauseOverlay?.removeFromParent()
+        pauseOverlay = nil
+        
+        // Resume all actions and physics
+        scene?.isPaused = false
+    }
+    
+    private func createPauseOverlay() -> SKNode {
+        let overlay = SKNode()
+        
+        // Semi-transparent background
+        let bg = SKShapeNode(rectOf: frame.size)
+        bg.fillColor = .black
+        bg.alpha = 0.5
+        bg.position = CGPoint(x: frame.midX, y: frame.midY)
+        overlay.addChild(bg)
+        
+        // Pause label
+        let pauseLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
+        pauseLabel.text = "PAUSED"
+        pauseLabel.fontSize = 48
+        pauseLabel.position = CGPoint(x: frame.midX, y: frame.midY)
+        overlay.addChild(pauseLabel)
+        
+        // Resume instructions
+        let tapLabel = SKLabelNode(fontNamed: "Helvetica")
+        tapLabel.text = "Tap anywhere to resume"
+        tapLabel.fontSize = 24
+        tapLabel.position = CGPoint(x: frame.midX, y: frame.midY - 50)
+        overlay.addChild(tapLabel)
+        
+        overlay.zPosition = 1000
+        return overlay
+    }
+    
     private func setupBackground() {
         // Create three parallax layers
         for layerIndex in 0..<3 {
@@ -579,7 +665,23 @@ class GameScene: BaseGameScene, SKPhysicsContactDelegate {
     }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if currentStamina > 0 {
+        guard let touch = touches.first else { return }
+        let location = touch.location(in: self)
+        
+        // Check for pause button tap
+        if let node = nodes(at: location).first, node.name == "pauseButton" {
+            gameState.togglePause()
+            return
+        }
+        
+        // If game is paused, any tap will resume
+        if gameState.currentState == .paused {
+            gameState.togglePause()
+            return
+        }
+        
+        // Only allow jumping if the game is playing
+        if gameState.currentState == .playing {
             hero.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
             hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: flapImpulse))
             currentStamina = max(currentStamina - staminaDepletion, 0)
@@ -915,4 +1017,18 @@ class GameScene: BaseGameScene, SKPhysicsContactDelegate {
     }
     
     // MARK: - Reset Game
+    private func handleGameOver() {
+        if gameState.currentState != .gameOver {
+            gameState.triggerGameOver()
+            
+            // Stop hero movement
+            hero.physicsBody?.velocity = .zero
+            hero.physicsBody?.angularVelocity = 0
+            
+            playSound("game_over")
+            
+            // Transition to game over scene
+            SceneManager.shared.transition(from: self, to: .gameOver(score: mainScore, coins: coinScore, reason: .collision))
+        }
+    }
 }
