@@ -34,7 +34,7 @@
 import SpriteKit
 import UIKit
 
-class NameEntryScene: SKScene {
+class NameEntryScene: BaseGameScene {
     // MARK: - Properties
     private let leaderboardManager = LeaderboardManager.shared
     private var textField: UITextField?

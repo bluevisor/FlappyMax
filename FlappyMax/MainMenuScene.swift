@@ -35,7 +35,7 @@ import SpriteKit
 import AVFoundation
 import UIKit
 
-class MainMenuScene: SKScene {
+class MainMenuScene: BaseGameScene {
 
     var audioPlayer: AVAudioPlayer?
     var swooshSoundEffect: AVAudioPlayer?

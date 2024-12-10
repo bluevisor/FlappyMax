@@ -1,6 +1,7 @@
 import SpriteKit
 
-class HighScoresScene: SKScene {
+class HighScoresScene: BaseGameScene {
+    // MARK: - Properties
     private let leaderboardManager = LeaderboardManager.shared
     
     override func didMove(to view: SKView) {

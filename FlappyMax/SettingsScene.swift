@@ -34,7 +34,7 @@
 import SpriteKit
 import UIKit
 
-class SettingsScene: SKScene {
+class SettingsScene: BaseGameScene {
     private var volumeSlider: UISlider?
     private var volumeLabel: SKLabelNode!
     

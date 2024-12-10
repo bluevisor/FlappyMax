@@ -59,10 +59,7 @@ struct PhysicsCategory {
     static let floor: UInt32 = 0x1 << 5
 }
 
-class GameScene: SKScene, SKPhysicsContactDelegate {
-    // UI Container
-    private var uiLayer: SKNode!
-
+class GameScene: BaseGameScene, SKPhysicsContactDelegate {
     // MARK: - Labels & Scores
     internal var mainScoreLabel: SKLabelNode!
     internal var coinScoreLabel: SKLabelNode!
@@ -125,97 +122,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal let staminaBarHeight: CGFloat = 20.0
     internal var staminaFill: SKSpriteNode!
 
-    // MARK: - Sound Effects
-    private var audioPlayers: [String: [AVAudioPlayer]] = [:]
-    private let maxSimultaneousSounds = 4
-    
-    private func loadSoundEffects() {
-        // Pre-load and prepare all sound effects
-        let sounds = [
-            "flap",         // flap.caf
-            "coin",         // coin.mp3
-            "burger",       // burger.mp3
-            "game_over",    // game_over.mp3
-            "game_start",   // game_start.mp3
-            "swoosh"        // swoosh.mp3
-        ]
-        
-        for sound in sounds {
-            // Pre-create multiple players for each sound
-            audioPlayers[sound] = []
-            for _ in 0..<maxSimultaneousSounds {
-                if createAudioPlayer(for: sound) != nil {
-                    print("Successfully cached sound: \(sound)")
-                }
-            }
-        }
-    }
-    
-    private func playSoundEffect(_ name: String) -> AVAudioPlayer? {
-        guard let players = audioPlayers[name] else { return nil }
-        
-        // Try to find a player that's not currently playing
-        if let availablePlayer = players.first(where: { !$0.isPlaying }) {
-            availablePlayer.currentTime = 0
-            availablePlayer.play()
-            return availablePlayer
-        }
-        
-        // If all players are busy, create a new one
-        return createAudioPlayer(for: name)
-    }
-    
-    private func createAudioPlayer(for name: String) -> AVAudioPlayer? {
-        // Map sound names to their file extensions
-        let soundExtensions = [
-            "flap": "caf",
-            "coin": "mp3",
-            "burger": "mp3",
-            "game_over": "mp3",
-            "game_start": "mp3",
-            "swoosh": "mp3"
-        ]
-        
-        // Get the correct extension for the sound
-        let fileExtension = soundExtensions[name] ?? "mp3"
-        
-        // Try to get the URL for the sound file
-        guard let url = Bundle.main.url(forResource: name, withExtension: fileExtension) else {
-            print("❌ Failed to find sound file: \(name).\(fileExtension)")
-            return nil
-        }
-        
-        do {
-            let player = try AVAudioPlayer(contentsOf: url)
-            let volume = UserDefaults.standard.float(forKey: "SFXVolume")
-            player.volume = volume
-            player.prepareToPlay()
-            
-            // Add to the pool of players for this sound
-            if var players = audioPlayers[name] {
-                if players.count < maxSimultaneousSounds {
-                    players.append(player)
-                    audioPlayers[name] = players
-                }
-            } else {
-                audioPlayers[name] = [player]
-            }
-            
-            print("✅ Loaded sound: \(name).\(fileExtension) (volume: \(Int(volume * 100))%)")
-            return player
-        } catch {
-            print("❌ Failed to create audio player for \(name): \(error.localizedDescription)")
-            return nil
-        }
-    }
-    
-    func updateSoundEffectsVolume(_ volume: Float) {
-        // Update volume for all audio players
-        for players in audioPlayers.values {
-            players.forEach { $0.volume = volume }
-        }
-    }
-
     override func didMove(to view: SKView) {
         super.didMove(to: view)
         
@@ -225,16 +131,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Log current volume and load sounds
         let currentVolume = UserDefaults.standard.float(forKey: "SFXVolume")
         print("Current game volume: \(currentVolume * 100)%")
-        loadSoundEffects()
-        
-        // Play game start sound
-        _ = playSoundEffect("game_start")
         
         self.physicsWorld.gravity = CGVector(dx: 0.0, dy: gravity)
         self.physicsWorld.contactDelegate = self
 
         // Create UI Layer first
-        setupUILayer()
         setupLabels()
         setupStaminaBar()
 
@@ -251,12 +152,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Reset current index
         currentIndex = 0
-    }
-
-    private func setupUILayer() {
-        uiLayer = SKNode()
-        uiLayer.zPosition = 100 // Ensure UI is always on top
-        addChild(uiLayer)
     }
 
     private func setupLabels() {
@@ -689,8 +584,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: flapImpulse))
             currentStamina = max(currentStamina - staminaDepletion, 0)
             
-            // Play flap sound
-            _ = playSoundEffect("flap")
+            playSound("flap")
         }
     }
 
@@ -732,7 +626,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 Collectable.shared.markAsCollected(coin)
                 coinScore += 1
                 coinScoreLabel.text = "\(coinScore)"
-                _ = playSoundEffect("coin")
+                playSound("coin")
                 
                 // Fade out and move up animation
                 let fadeOut = SKAction.fadeOut(withDuration: 0.3)
@@ -753,7 +647,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 burgerScore += 1
                 currentStamina = maxStamina  // Full stamina restoration
                 updateStaminaBar()
-                _ = playSoundEffect("burger")
+                playSound("burger")
                 
                 // Fade out and move up animation
                 let fadeOut = SKAction.fadeOut(withDuration: 0.3)
@@ -773,29 +667,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
-    private func spawnCollectiblePattern(at basePosition: CGPoint, pattern: CollectiblePattern, isBurger: Bool) {
-        let positions = pattern.getRelativePositions()
-        
-        for relativePos in positions {
-            let collectible: SKSpriteNode?
-            if isBurger {
-                collectible = Collectable.shared.getPooledBurger()
-            } else {
-                collectible = Collectable.shared.getPooledCoin()
-            }
-            
-            if let collectible = collectible {
-                let finalPos = CGPoint(
-                    x: basePosition.x + relativePos.x,
-                    y: basePosition.y + relativePos.y
-                )
-                
-                collectible.position = finalPos
-                if collectible.parent == nil {  // Only add if not already in scene
-                    addChild(collectible)
+    override func cleanupScene() {
+        // Remove and recycle all collectibles
+        self.children.forEach { node in
+            if let collectible = node as? SKSpriteNode {
+                if collectible.name == "coin" || collectible.name == "burger" {
+                    Collectable.shared.recycleCollectible(collectible)
                 }
             }
         }
+        
+        // Reset scores and other game state
+        mainScore = 0
+        coinScore = 0
+        currentStamina = maxStamina
+        isGameOver = false
+        
+        // Update UI
+        mainScoreLabel.text = "0"
+        coinScoreLabel.text = "0"
+        updateStaminaBar()
     }
     
     // MARK: - Grid System
@@ -864,7 +755,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let unit: CGFloat = DeviceType.current == .iPhone ? 70.0 : 120.0  // Base unit for spacing
             
             switch self {
-            // Original patterns
             case .single:
                 return [(0, 0)]  // Center
             case .triangle:
@@ -966,56 +856,63 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     
+    // MARK: - Collectible Spawning
+    private func spawnCollectibles() {
+        let spawnPosition = CGPoint(x: baseSpawnX, y: frame.midY)
+        
+        // Randomly select a pattern
+        let patterns: [CollectiblePattern] = [
+            .single, .triangle, .square, .cross, .star,
+            .diagonal3, .diagonal5, .circle,
+            .v2, .v3, .v4, .v5,
+            .h2, .h3, .h4, .h5
+        ]
+        
+        let pattern = patterns.randomElement() ?? .single
+        let isBurger = Int.random(in: 1...100) <= 20 // 20% chance for burger
+        
+        spawnCollectiblePattern(at: spawnPosition, pattern: pattern, isBurger: isBurger)
+    }
+    
+    private func spawnCollectiblePattern(at basePosition: CGPoint, pattern: CollectiblePattern, isBurger: Bool) {
+        let positions = pattern.getRelativePositions()
+        
+        for relativePos in positions {
+            let collectible: SKSpriteNode?
+            if isBurger {
+                collectible = Collectable.shared.getPooledBurger()
+            } else {
+                collectible = Collectable.shared.getPooledCoin()
+            }
+            
+            if let collectible = collectible {
+                let finalPos = CGPoint(
+                    x: basePosition.x + relativePos.x,
+                    y: basePosition.y + relativePos.y
+                )
+                
+                collectible.position = finalPos
+                if collectible.parent == nil {  // Only add if not already in scene
+                    addChild(collectible)
+                }
+            }
+        }
+    }
+
     // MARK: - Game Over
     private func gameOver(reason: GameOverReason) {
         if isGameOver { return }
         isGameOver = true
         
-        // Play game over sound
-        _ = playSoundEffect("game_over")
+        // Stop hero movement
+        hero.physicsBody?.velocity = .zero
+        hero.physicsBody?.angularVelocity = 0
         
-        let mainScore = mainScore
-        let coinScore = coinScore
+        playSound("game_over")
         
-        // Check if score qualifies for leaderboard
-        let leaderboard = LeaderboardManager.shared
-        let qualifiesForLeaderboard = mainScore > 0 && leaderboard.scoreQualifiesForLeaderboard(mainScore)
-        
-        let nextScene: SKScene
-        if qualifiesForLeaderboard {
-            nextScene = NameEntryScene(size: self.size, score: mainScore, coins: coinScore, gameOverReason: reason)
-        } else {
-            let gameOver = GameOverScene(size: self.size)
-            gameOver.mainScore = mainScore
-            gameOver.coinScore = coinScore
-            gameOver.gameOverReason = reason
-            nextScene = gameOver
-        }
-        
-        nextScene.scaleMode = .aspectFill
-        view?.presentScene(nextScene, transition: SKTransition.fade(withDuration: 0.3))
+        // Transition to game over scene
+        SceneManager.shared.transition(from: self, to: .gameOver(score: mainScore, coins: coinScore, reason: reason))
     }
     
     // MARK: - Reset Game
-    private func cleanupScene() {
-        // Remove and recycle all collectibles
-        self.children.forEach { node in
-            if let collectible = node as? SKSpriteNode {
-                if collectible.name == "coin" || collectible.name == "burger" {
-                    Collectable.shared.recycleCollectible(collectible)
-                }
-            }
-        }
-        
-        // Reset scores and other game state
-        mainScore = 0
-        coinScore = 0
-        currentStamina = maxStamina
-        isGameOver = false
-        
-        // Update UI
-        mainScoreLabel.text = "0"
-        coinScoreLabel.text = "0"
-        updateStaminaBar()
-    }
 }

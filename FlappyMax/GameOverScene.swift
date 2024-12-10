@@ -34,7 +34,7 @@
 import SpriteKit
 import Foundation
 
-class GameOverScene: SKScene {
+class GameOverScene: BaseGameScene {
     // MARK: - Properties
     private let leaderboardManager = LeaderboardManager.shared
     var mainScore: Int = 0
