@@ -187,6 +187,7 @@ extension NameEntryScene: UITextFieldDelegate {
         print("NameEntryScene: Name entered: \(name)")
         #endif
         
+        GameScene.playSound("click") // Play click sound when submitting
         submitName(name.isEmpty ? "Anonymous" : name)
         
         // Remove the text field

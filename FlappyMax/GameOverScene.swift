@@ -56,6 +56,12 @@ class GameOverScene: SKScene {
     override func didMove(to view: SKView) {
         setupScene()
         
+        // Enable keyboard input
+        #if targetEnvironment(macCatalyst)
+        view.isUserInteractionEnabled = true
+        view.becomeFirstResponder()
+        #endif
+        
         // Check for high score if not skipped and score is not 0
         if !skipHighScoreCheck && mainScore > 0 {
             let isHighScore = leaderboardManager.scoreQualifiesForLeaderboard(mainScore)
@@ -234,4 +240,33 @@ class GameOverScene: SKScene {
             view?.presentScene(menuScene, transition: SKTransition.fade(withDuration: 0.3))
         }
     }
+    
+    #if targetEnvironment(macCatalyst)
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        #if !RELEASE
+        print("\n=== Keyboard Event in GameOverScene ===")
+        for press in presses {
+            if let key = press.key {
+                print("Key pressed: \(key.charactersIgnoringModifiers ?? "")")
+            }
+        }
+        #endif
+        
+        for press in presses {
+            if let key = press.key {
+                if key.charactersIgnoringModifiers == "\r" {  // Enter key
+                    #if !RELEASE
+                    print("Enter pressed, restarting game")
+                    #endif
+                    let gameScene = GameScene(size: self.size)
+                    gameScene.scaleMode = .aspectFill
+                    view?.presentScene(gameScene, transition: SKTransition.fade(withDuration: 0.3))
+                    return
+                }
+            }
+        }
+        
+        super.pressesBegan(presses, with: event)
+    }
+    #endif
 }

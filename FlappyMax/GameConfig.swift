@@ -39,16 +39,15 @@ import SpriteKit
 enum DeviceType {
     case iPhone
     case iPad
-    case other
     
     static var current: DeviceType {
         let screen = UIScreen.main.bounds
         let maxDimension = max(screen.width, screen.height)
         
-        switch maxDimension {
-        case 0..<1024:  return .iPhone
-        case 1024...:   return .iPad
-        default:        return .other
+        if maxDimension < 1024 {
+            return .iPhone
+        } else {
+            return .iPad
         }
     }
 }
@@ -78,25 +77,22 @@ enum GameConfig {
     struct Scales {
         static var hero: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 1.1
-            case .iPad: return 1.25
-            case .other: return 1.25
+            case .iPhone: return 0.32
+            case .iPad: return 0.32
             }
         }
         
         static var pole: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 3.0
-            case .iPad: return 3.6
-            case .other: return 3.6  // Match iPad
+            case .iPhone: return 2.9
+            case .iPad: return 2.9
             }
         }
         
         static var floor: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 4.0
-            case .iPad: return 5.5
-            case .other: return 5.5
+            case .iPad: return 4.8
             }
         }
         
@@ -104,7 +100,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.42
             case .iPad: return 0.48
-            case .other: return 0.48
             }
         }
         
@@ -112,7 +107,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 1.8
             case .iPad: return 2.0
-            case .other: return 2.0
             }
         }
 
@@ -120,7 +114,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 1.0
             case .iPad: return 1.4
-            case .other: return 1.4
             }
         }
         
@@ -128,7 +121,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.5
             case .iPad: return 0.7
-            case .other: return 0.7
             }
         }
         
@@ -136,7 +128,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.4
             case .iPad: return 0.6
-            case .other: return 0.6
             }
         }
         
@@ -144,7 +135,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.5
             case .iPad: return 0.7
-            case .other: return 0.7
             }
         }
         
@@ -152,15 +142,13 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.4
             case .iPad: return 0.6
-            case .other: return 0.6
             }
         }
         
         static var coinIcon: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 0.5
+            case .iPhone: return 0.6
             case .iPad: return 0.6
-            case .other: return 0.6
             }
         }
     }
@@ -197,8 +185,7 @@ enum GameConfig {
             let safeAreaInset = scene?.windows.first?.safeAreaInsets.top ?? 0
             switch DeviceType.current {
             case .iPhone: return max(safeAreaInset + 20, screenSize.height * 0.1)
-            case .iPad: return max(safeAreaInset + 40, screenSize.height * 0.08)
-            case .other: return max(safeAreaInset + 20, screenSize.height * 0.1)
+            case .iPad: return max(safeAreaInset + 40, screenSize.height * 0.1)
             }
         }
 
@@ -210,21 +197,25 @@ enum GameConfig {
 
         static var polePairGap: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 142.0
-            case .iPad: return 165.0
-            case .other: return 165.0
+            case .iPhone: return 146.0
+            case .iPad: return 168.0
             }
         }
         
         static let poleMargin: CGFloat = 50.0
-        static let poleSpacing: CGFloat = screenSize.width / 2.0
+
+        static var poleSpacing: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return poleWidth * 7.5
+            case .iPad: return poleWidth * 6
+            }
+        }
         static let scoreZoneWidth: CGFloat = 10.0
 
         static var polePairMinY: CGFloat {
             switch DeviceType.current {
             case .iPhone: return heroBaseSize.height * 1.0
             case .iPad: return heroBaseSize.height * 1.5
-            case .other: return heroBaseSize.height * 1.5
             }
         }
 
@@ -232,7 +223,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return screenSize.height - (heroBaseSize.height * 1.0)
             case .iPad: return screenSize.height - (heroBaseSize.height * 1.5)
-            case .other: return screenSize.height - (heroBaseSize.height * 1.5)
             }
         }
 
@@ -256,7 +246,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return max(safeAreaInset + 20, screenSize.width * 0.1)
             case .iPad: return max(safeAreaInset + 40, screenSize.width * 0.08)
-            case .other: return max(safeAreaInset + 20, screenSize.width * 0.1)
             }
         }
 
@@ -276,7 +265,6 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return -8.0
             case .iPad: return -9.5
-            case .other: return -9.5  // Match iPad
             }
         }
 
@@ -284,28 +272,21 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 92.0
             case .iPad: return 142.0
-            case .other: return 142.0  // Match iPad
             }
         }
 
         static var gameSpeed: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 7.0
-            case .iPad: return 10.0
-            case .other: return 10.0  // Match iPad
+            case .iPhone: return 380.0
+            case .iPad: return 630.0
             }
         }
     }
     
     static var deviceScaleFactor: CGFloat {
         switch DeviceType.current {
-        case .iPhone:  return 1.0
-        case .iPad:    return 1.5
-        case .other:
-            let currentScreen = UIScreen.main.bounds
-            let widthRatio = currentScreen.width / baseScreenWidth
-            let heightRatio = currentScreen.height / baseScreenHeight
-            return min(widthRatio, heightRatio)
+        case .iPhone: return 0.95
+        case .iPad: return 1.4
         }
     }
 

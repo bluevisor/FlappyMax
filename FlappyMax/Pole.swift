@@ -49,9 +49,18 @@ class Pole {
 
     func recyclePoleSet(_ poleSet: SKNode) {
         poleSet.removeFromParent()
-        // Reset score zone state
-        if let scoreZone = poleSet.childNode(withName: "scoreZone") {
-            scoreZone.userData = nil
+        // Reset score detector state and physics
+        if let scoreDetector = poleSet.childNode(withName: "scoreDetector") {
+            scoreDetector.userData = NSMutableDictionary()
+            scoreDetector.userData?.setValue(false, forKey: "scored")
+            
+            // Recreate physics body
+            let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
+            scoreDetector.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 5, height: gap), center: .zero)
+            scoreDetector.physicsBody?.isDynamic = false
+            scoreDetector.physicsBody?.categoryBitMask = PhysicsCategory.scoreZone
+            scoreDetector.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+            scoreDetector.physicsBody?.collisionBitMask = 0
         }
         polePool.append(poleSet)
     }
@@ -99,21 +108,28 @@ class Pole {
         topPole.position = CGPoint(x: 0, y: gap/2 + topPole.size.height/2)
         bottomPole.position = CGPoint(x: 0, y: -gap/2 - bottomPole.size.height/2)
         
-        // Setup score zone in the middle of the gap
-        let scoreZone = SKNode()
-        scoreZone.name = "scoreZone"
-        scoreZone.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: GameConfig.Metrics.scoreZoneWidth, height: gap))
-        scoreZone.physicsBody?.isDynamic = false
-        scoreZone.physicsBody?.categoryBitMask = PhysicsCategory.scoreZone
-        scoreZone.physicsBody?.contactTestBitMask = PhysicsCategory.hero
-        scoreZone.physicsBody?.collisionBitMask = 0
+        // Setup score detector in the middle of the gap
+        let scoreDetector = SKNode()
+        scoreDetector.name = "scoreDetector"
+        // Make the score detector tall enough to catch the hero
+        let scoreDetectorWidth = CGFloat(5)
+        scoreDetector.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: scoreDetectorWidth, height: gap), center: .zero)
+        scoreDetector.physicsBody?.isDynamic = false
+        scoreDetector.physicsBody?.categoryBitMask = PhysicsCategory.scoreZone
+        scoreDetector.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+        scoreDetector.physicsBody?.collisionBitMask = 0
+        scoreDetector.userData = NSMutableDictionary()
+        scoreDetector.userData?.setValue(false, forKey: "scored")
         
-        // Position score zone in the middle of the gap, slightly ahead of the poles
-        scoreZone.position = CGPoint(x: 0, y: 0)
+        // Position score detector in the gap
+        scoreDetector.position = CGPoint(
+            x: topPole.size.width/2,
+            y: 0
+        )
         
         poleSet.addChild(topPole)
         poleSet.addChild(bottomPole)
-        poleSet.addChild(scoreZone)
+        poleSet.addChild(scoreDetector)
         
         return poleSet
     }
