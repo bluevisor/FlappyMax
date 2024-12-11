@@ -30,10 +30,19 @@
 import SpriteKit
 import GameplayKit
 
+enum CollectibleType {
+    case coin
+    case burger
+}
+
 class Collectable {
     static let shared = Collectable()
     private var coinPool: [SKSpriteNode] = []
     private var burgerPool: [SKSpriteNode] = []
+    
+    // Tracking arrays for active collectibles
+    private(set) var activeCoins: [SKSpriteNode] = []
+    private(set) var activeBurgers: [SKSpriteNode] = []
     
     // Key for associated object to store collected state
     private let collectedKey = "CollectableCollectedState"
@@ -56,119 +65,87 @@ class Collectable {
     func initializeCollectiblePool(coinCount: Int = 50, burgerCount: Int = 5) {
         // Initialize coin pool
         for _ in 0..<coinCount {
-            let coin = createCollectable(textureName: "coin_01", physicsCategory: PhysicsCategory.coin)
+            let coinAtlas = SKTextureAtlas(named: "coin")
+            let coinTexture = coinAtlas.textureNamed("coin_01")
+            let coin = createCollectable(texture: coinTexture, physicsCategory: PhysicsCategory.coin)
             coin.removeFromParent() // Ensure it's not in the scene
             coinPool.append(coin)
         }
         
         // Initialize burger pool
         for _ in 0..<burgerCount {
-            let burger = createCollectable(textureName: "burger.png", physicsCategory: PhysicsCategory.burger)
+            let burger = createCollectable(texture: SKTexture(imageNamed: "burger.png"), physicsCategory: PhysicsCategory.burger)
             burger.name = "burger"
             burger.removeFromParent() // Ensure it's not in the scene
             burgerPool.append(burger)
         }
     }
     
-    func getPooledCoin() -> SKSpriteNode? {
-        if let coin = coinPool.first {
-            coinPool.removeFirst()
-            // Ensure coin is removed from any parent before reuse
-            if coin.parent != nil {
-                coin.removeFromParent()
+    func createCollectible(type: CollectibleType) -> SKSpriteNode {
+        let collectible: SKSpriteNode
+        switch type {
+        case .coin:
+            if let coin = coinPool.first {
+                coinPool.removeFirst()
+                collectible = coin
+                activeCoins.append(coin)
+            } else {
+                let coinAtlas = SKTextureAtlas(named: "coin")
+                let coinTexture = coinAtlas.textureNamed("coin_01")
+                collectible = createCollectable(texture: coinTexture, physicsCategory: PhysicsCategory.coin)
+                activeCoins.append(collectible)
             }
-            
-            // Reset collected state and visibility
-            resetCollectedState(coin)
-            coin.userData = nil
-            coin.alpha = 1.0
-            
-            // Restore physics body
-            let scaledSize = GameConfig.adaptiveSize(
-                for: coin.texture!,
-                spriteType: .coin
-            )
-            coin.physicsBody = SKPhysicsBody(circleOfRadius: scaledSize.width / 2)
-            coin.physicsBody?.isDynamic = false
-            coin.physicsBody?.categoryBitMask = PhysicsCategory.coin
-            coin.physicsBody?.collisionBitMask = 0
-            coin.physicsBody?.contactTestBitMask = PhysicsCategory.hero
-            
-            // Restart spinning animation using atlas
-            coin.removeAllActions()
-            let coinAtlas = SKTextureAtlas(named: "coin")
-            var textures: [SKTexture] = []
-            for i in 1...15 {
-                let textureName = String(format: "coin_%02d", i)
-                let texture = coinAtlas.textureNamed(textureName)
-                texture.filteringMode = .nearest
-                textures.append(texture)
+        case .burger:
+            if let burger = burgerPool.first {
+                burgerPool.removeFirst()
+                collectible = burger
+                activeBurgers.append(burger)
+            } else {
+                collectible = createCollectable(texture: SKTexture(imageNamed: "burger.png"), physicsCategory: PhysicsCategory.burger)
+                activeBurgers.append(collectible)
             }
-            let spinAction = SKAction.animate(with: textures, timePerFrame: 0.05)
-            let repeatSpin = SKAction.repeatForever(spinAction)
-            coin.run(repeatSpin)
-            
-            return coin
         }
-        return nil
-    }
-    
-    func getPooledBurger() -> SKSpriteNode? {
-        if let burger = burgerPool.first {
-            burgerPool.removeFirst()
-            // Ensure burger is removed from any parent before reuse
-            if burger.parent != nil {
-                burger.removeFromParent()
-            }
-            
-            // Reset collected state and visibility
-            resetCollectedState(burger)
-            burger.userData = nil
-            burger.alpha = 1.0
-            
-            // Restore physics body
-            let scaledSize = GameConfig.adaptiveSize(
-                for: burger.texture!,
-                spriteType: .burger
-            )
-            burger.physicsBody = SKPhysicsBody(circleOfRadius: scaledSize.width / 2)
-            burger.physicsBody?.isDynamic = false
-            burger.physicsBody?.categoryBitMask = PhysicsCategory.burger
-            burger.physicsBody?.collisionBitMask = 0
-            burger.physicsBody?.contactTestBitMask = PhysicsCategory.hero
-            
-            return burger
-        }
-        return nil
+        return collectible
     }
     
     func recycleCollectible(_ collectible: SKSpriteNode) {
         collectible.removeFromParent()
         resetCollectedState(collectible)  // Reset the collected state
         
-        // Restore the physics body
-        let scaledSize = GameConfig.adaptiveSize(
-            for: collectible.texture!,
-            spriteType: collectible.name == "coin" ? .coin : .burger
-        )
-        collectible.physicsBody = SKPhysicsBody(circleOfRadius: scaledSize.width / 2)
+        if collectible.name == "burger" {
+            if let index = activeBurgers.firstIndex(of: collectible) {
+                activeBurgers.remove(at: index)
+            }
+            burgerPool.append(collectible)
+        } else {
+            if let index = activeCoins.firstIndex(of: collectible) {
+                activeCoins.remove(at: index)
+            }
+            coinPool.append(collectible)
+        }
+        
+        // Reset physics body
+        let radius = collectible.size.width/2
+        collectible.physicsBody = SKPhysicsBody(circleOfRadius: radius)
         collectible.physicsBody?.isDynamic = false
-        collectible.physicsBody?.categoryBitMask = collectible.name == "coin" ? PhysicsCategory.coin : PhysicsCategory.burger
+        collectible.physicsBody?.categoryBitMask = collectible.name == "burger" ? PhysicsCategory.burger : PhysicsCategory.coin
         collectible.physicsBody?.collisionBitMask = 0
         collectible.physicsBody?.contactTestBitMask = PhysicsCategory.hero
         
+        // Reset visual properties
+        collectible.alpha = 1.0
+        collectible.removeAllActions()
+        
         if collectible.name == "coin" {
-            coinPool.append(collectible)
-        } else if collectible.name == "burger" {
-            burgerPool.append(collectible)
+            // Restart coin animation
+            setupCoinAnimation(for: collectible)
         }
     }
 
     private func createCollectable(
-        textureName: String,
+        texture: SKTexture,
         physicsCategory: UInt32
     ) -> SKSpriteNode {
-        let texture = SKTexture(imageNamed: textureName)
         texture.filteringMode = .nearest
         
         // Use GameConfig's adaptive sizing for consistent scaling
@@ -183,7 +160,7 @@ class Collectable {
         sprite.physicsBody?.categoryBitMask = physicsCategory
         sprite.physicsBody?.collisionBitMask = 0
         sprite.physicsBody?.contactTestBitMask = PhysicsCategory.hero
-
+        
         sprite.name = physicsCategory == PhysicsCategory.coin ? "coin" : "burger"
         
         if physicsCategory == PhysicsCategory.coin {
@@ -196,6 +173,8 @@ class Collectable {
     private func setupCoinAnimation(for coin: SKSpriteNode) {
         let coinAtlas = SKTextureAtlas(named: "coin")
         var frames: [SKTexture] = []
+        
+        // Load all frames from the coin atlas
         for i in 1...15 {
             let textureName = String(format: "coin_%02d", i)
             let texture = coinAtlas.textureNamed(textureName)
@@ -203,7 +182,8 @@ class Collectable {
             frames.append(texture)
         }
         
-        let spinAction = SKAction.animate(with: frames, timePerFrame: 0.05)
+        // Create animation action at 30fps
+        let spinAction = SKAction.animate(with: frames, timePerFrame: 1.0/30.0)
         let repeatSpin = SKAction.repeatForever(spinAction)
         coin.run(repeatSpin)
     }

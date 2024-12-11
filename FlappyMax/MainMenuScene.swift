@@ -189,7 +189,7 @@ class MainMenuScene: SKScene {
     }
 
     private func preloadAudio() {
-        if let swooshSoundURL = Bundle.main.url(forResource: "swoosh", withExtension: "mp3") {
+        if let swooshSoundURL = Bundle.main.url(forResource: "swoosh", withExtension: "m4a") {
             swooshSoundEffect = try? AVAudioPlayer(contentsOf: swooshSoundURL)
             swooshSoundEffect?.prepareToPlay()
         }
