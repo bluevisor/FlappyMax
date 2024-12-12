@@ -94,16 +94,12 @@ class Collectable {
             let coinAtlas = SKTextureAtlas(named: "coin")
             let coinTexture = coinAtlas.textureNamed("coin_01")
             let coin = createCollectable(texture: coinTexture, physicsCategory: PhysicsCategory.coin)
-            let coinAtlas = SKTextureAtlas(named: "coin")
-            let coinTexture = coinAtlas.textureNamed("coin_01")
-            let coin = createCollectable(texture: coinTexture, physicsCategory: PhysicsCategory.coin)
             coin.removeFromParent() // Ensure it's not in the scene
             coinPool.append(coin)
         }
         
         // Initialize burger pool
         for _ in 0..<burgerCount {
-            let burger = createCollectable(texture: SKTexture(imageNamed: "burger.png"), physicsCategory: PhysicsCategory.burger)
             let burger = createCollectable(texture: SKTexture(imageNamed: "burger.png"), physicsCategory: PhysicsCategory.burger)
             burger.name = "burger"
             burger.removeFromParent() // Ensure it's not in the scene
@@ -344,8 +340,6 @@ class Collectable {
             frames.append(texture)
         }
         
-        // Create animation action at 30fps
-        let spinAction = SKAction.animate(with: frames, timePerFrame: 1.0/30.0)
         // Create animation action at 30fps
         let spinAction = SKAction.animate(with: frames, timePerFrame: 1.0/30.0)
         let repeatSpin = SKAction.repeatForever(spinAction)
