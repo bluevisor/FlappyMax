@@ -21,7 +21,6 @@ class PauseManager {
         
         // Calculate layout metrics
         let screenHeight = scene.frame.height
-        let topMargin = GameConfig.SafeMargin.top
         let bottomMargin = GameConfig.SafeMargin.bottom
         let vSpacing = screenHeight * 0.05
         

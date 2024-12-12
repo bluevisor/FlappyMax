@@ -611,14 +611,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Enable physics after a short delay
         let enablePhysicsAction = SKAction.run { [self] in
-            #if DEBUG
             self.hero.physicsBody?.isDynamic = true
+            #if DEBUG
             print("Hero physics enabled - Current position: \(String(describing: self.hero.position))")
             #endif
         }
         
         hero.run(SKAction.sequence([
-            SKAction.wait(forDuration: 1/30),
+            SKAction.wait(forDuration: 10/30),
             enablePhysicsAction
         ]))
     }
