@@ -382,7 +382,9 @@ enum GameConfig {
         for texture: SKTexture,
         spriteType: SpriteType
     ) -> CGSize {
+        #if DEBUG
         print("🎯 Using sprite type: \(spriteType) for texture: \(texture.description)")
+        #endif
         let scale = finalScale(for: spriteType)
         return CGSize(
             width: texture.size().width * scale,

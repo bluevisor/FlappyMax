@@ -478,10 +478,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseManager = PauseManager(scene: self, physicsWorld: physicsWorld)
     }
 
-    private func setupPauseManager() {
-        pauseManager = PauseManager(scene: self, physicsWorld: physicsWorld)
-    }
-
     private func setupBackground() {
         // Create three parallax layers
         for layerIndex in 0..<3 {
@@ -611,7 +607,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         heroBody.mass = 0.22  // Lower mass makes the hero more responsive to impulses
         heroBody.categoryBitMask = PhysicsCategory.hero
         heroBody.collisionBitMask = PhysicsCategory.floor | PhysicsCategory.pole
-        heroBody.contactTestBitMask = PhysicsCategory.floor | PhysicsCategory.pole | PhysicsCategory.coin | PhysicsCategory.burger
+        heroBody.contactTestBitMask = PhysicsCategory.floor | PhysicsCategory.pole | 
+                                    PhysicsCategory.coin | PhysicsCategory.burger | 
+                                    PhysicsCategory.pizza | PhysicsCategory.sushi | 
+                                    PhysicsCategory.fries
         hero.physicsBody = heroBody
         
         addChild(hero)
@@ -679,7 +678,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         Pole.shared.initializePolePool(count: 6)
         
         // Initialize collectible pool
-        Collectable.shared.initializeCollectiblePool(coinCount: 25, burgerCount: 3)
+        Collectable.shared.initializeCollectiblePool(coinCount: 25, burgerCount: 3, pizzaCount: 3, sushiCount: 3, friesCount: 3)
 
         // Reset pole count for initial spawning
         poleSetCount = 0
@@ -720,22 +719,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
             // Spawn food every 5 poles with equal probability
             else if poleSetCount % 5 == 0 {
+                #if DEBUG
                 print("🍽️ Food spawn at pole set: \(poleSetCount)")
-                let foodTypes: [CollectibleType] = [.burger, .pizza, .sushi, .fries]
+                #endif
+                let foodTypes: [CollectibleType] = [.burger, .sushi, .pizza, .fries]
                 let randomFood = foodTypes[Int.random(in: 0..<foodTypes.count)]
+                #if DEBUG
                 print("🍴 Selected food type: \(randomFood)")
+                #endif
                 spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: .single, collectibleType: randomFood)
                 
                 // Log available food in pools
+                #if DEBUG
                 print("📦 Pool status:")
                 print("  🍔 Burgers in pool: \(Collectable.shared.burgerPool.count)")
-                print("  🍕 Pizzas in pool: \(Collectable.shared.pizzaPool.count)")
                 print("  🍣 Sushi in pool: \(Collectable.shared.sushiPool.count)")
+                print("  🍕 Pizzas in pool: \(Collectable.shared.pizzaPool.count)")
                 print("  🍟 Fries in pool: \(Collectable.shared.friesPool.count)")
+                #endif
             } 
             // Regular coin patterns for other poles
             else {
-                let patterns: [CollectiblePattern] = [.single, .triangle, .square, .cross]
+                let patterns: [CollectiblePattern] = [.single, .triangle, .square, .cross, .star, .diagonal3, .diagonal5, .circle, .v2, .v3, .v4, .v5, .h2, .h3, .h4, .h5]
                 let pattern = patterns[Int.random(in: 0..<patterns.count)]
                 spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: pattern, collectibleType: .coin)
             }
@@ -848,58 +853,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 Collectable.shared.recycleCollectible(burger)
             }
         }
+        
+        // Move active pizzas
+        for pizza in Collectable.shared.activePizzas {
+            pizza.position.x -= speed
+            if pizza.position.x < -frame.width {
+                Collectable.shared.recycleCollectible(pizza)
+            }
+        }
+        
+        // Move active sushi
+        for sushi in Collectable.shared.activeSushis {
+            sushi.position.x -= speed
+            if sushi.position.x < -frame.width {
+                Collectable.shared.recycleCollectible(sushi)
+            }
+        }
+        
+        // Move active fries
+        for fries in Collectable.shared.activeFries {
+            fries.position.x -= speed
+            if fries.position.x < -frame.width {
+                Collectable.shared.recycleCollectible(fries)
+            }
+        }
     }
-
-    // MARK: - Input Handling
     
-    #if targetEnvironment(macCatalyst) || os(iOS)
-    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        guard !isGameOver else { return }
-        
-        for press in presses {
-            if press.key?.keyCode == .keyboardSpacebar {
-                flap()
-                return
-            }
-        }
-        super.pressesBegan(presses, with: event)
-    }
-    #endif
-    
-    #if targetEnvironment(macCatalyst)
-    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        #if DEBUG
-        print("\n=== Keyboard Event ===")
-        for press in presses {
-            if let key = press.key {
-                print("Key pressed: \(key.charactersIgnoringModifiers ?? "")")
-            }
-        }
-        print("Game over state: \(isGameOver)")
-        #endif
-        
-        guard !isGameOver else {
-            #if DEBUG
-            print("Game is over, restarting...")
-            #endif
-            restartGame()
-            return
-        }
-        
-        for press in presses {
-            if let key = press.key, key.charactersIgnoringModifiers == " " {
-                #if DEBUG
-                print("Spacebar pressed, calling flap()")
-                #endif
-                flap()
-                return
-            }
-        }
-        
-        super.pressesBegan(presses, with: event)
-    }
-    #endif
-
     private func flap() {
         guard !isGameOver else { return }
         
@@ -986,32 +965,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func handleCollectibleCollection(_ collectible: SKSpriteNode, type: CollectibleType) {
         // Immediately mark as collected and disable physics to prevent multiple collisions
         Collectable.shared.markAsCollected(collectible)
-        // collectible.physicsBody = nil
         collectible.physicsBody?.categoryBitMask = 0
         collectible.physicsBody?.contactTestBitMask = 0
+        
+        // Apply stamina boost based on type
+        let boost = type.staminaBoost
+        currentStamina = min(maxStamina, currentStamina + boost)
+        updateStaminaBar()
         
         switch type {
         case .coin:
             coinScore += 1
             coinCounterLabel.text = "\(coinScore)"
             _ = playSoundEffect("coin")
-        case .burger:
-            burgerScore += 1
-            currentStamina = 100.0  // Full stamina restoration
-            updateStaminaBar()
+        case .burger, .pizza, .sushi, .fries:
             _ = playSoundEffect("burger")
-        case .pizza:
-            coinScore += 2
-            coinCounterLabel.text = "\(coinScore)"
-            _ = playSoundEffect("coin")
-        case .sushi:
-            coinScore += 3
-            coinCounterLabel.text = "\(coinScore)"
-            _ = playSoundEffect("coin")
-        case .fries:
-            coinScore += 4
-            coinCounterLabel.text = "\(coinScore)"
-            _ = playSoundEffect("coin")
         }
         
         // Fade out and move up animation
@@ -1488,7 +1456,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Remove and recycle all collectibles
         self.children.forEach { node in
             if let collectible = node as? SKSpriteNode {
-                if collectible.name == "coin" || collectible.name == "burger" {
+                if collectible.name == "coin" || collectible.name == "burger" || collectible.name == "pizza" || collectible.name == "sushi" || collectible.name == "fries" {
                     Collectable.shared.recycleCollectible(collectible)
                 }
             }
