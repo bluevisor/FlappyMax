@@ -21,7 +21,6 @@ class PauseManager {
         
         // Calculate layout metrics
         let screenHeight = scene.frame.height
-        let topMargin = GameConfig.SafeMargin.top
         let bottomMargin = GameConfig.SafeMargin.bottom
         let vSpacing = screenHeight * 0.05
         
@@ -104,11 +103,5 @@ class PauseManager {
             updateHeroCollision()
             physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
         }
-    }
-    
-    func toggleGravity() {
-        guard let physicsWorld = physicsWorld else { return }
-        isGravityEnabled.toggle()
-        physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
     }
 }

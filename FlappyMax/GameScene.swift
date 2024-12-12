@@ -55,8 +55,11 @@ struct PhysicsCategory {
     static let pole: UInt32 = 0x1 << 1
     static let coin: UInt32 = 0x1 << 2
     static let burger: UInt32 = 0x1 << 3
-    static let scoreZone: UInt32 = 0x1 << 4
-    static let floor: UInt32 = 0x1 << 5
+    static let pizza: UInt32 = 0x1 << 4
+    static let sushi: UInt32 = 0x1 << 5
+    static let fries: UInt32 = 0x1 << 6
+    static let scoreZone: UInt32 = 0x1 << 7
+    static let floor: UInt32 = 0x1 << 8
 }
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -261,27 +264,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             togglePause()
             return
         }
-        
+
         for node in touchedNodes {
             if node.name == "resumeButton" {
                 togglePause()
                 return
-            } else if node.name == "restartButton" {
-                restartGame()
-                return
-            } else if node.name == "gravityToggle" {
-                toggleGravity()
-                if let gravityToggle = childNode(withName: "//gravityToggle") as? SKLabelNode {
-                    gravityToggle.text = "Toggle Gravity: \(isGravityEnabled ? "ON" : "OFF")"
-                }
-                return
-            } else if node.name == "heroCollisionToggle" {
-                toggleHeroCollision()
-                if let heroCollisionToggle = childNode(withName: "//heroCollisionToggle") as? SKLabelNode {
-                    heroCollisionToggle.text = "Toggle Hero Collision: \(isHeroCollisionEnabled ? "ON" : "OFF")"
-                }
-                return
-            }
+            } 
         }
 
         // Only handle game input if not paused
@@ -354,6 +342,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupLabels()
         setupStaminaBar()
         setupPauseButton()
+        setupPauseManager()
 
         cleanupScene()
         
@@ -378,9 +367,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         uiLayer = SKNode()
         uiLayer.zPosition = 100 // Ensure UI is always on top
         addChild(uiLayer)
-        
-        // Initialize pause manager
-        pauseManager = PauseManager(scene: self, physicsWorld: physicsWorld)
     }
 
     private func setupLabels() {
@@ -486,6 +472,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Add to UI layer to prevent parallax effects
         uiLayer.addChild(pauseButton)
+    }
+
+    private func setupPauseManager() {
+        pauseManager = PauseManager(scene: self, physicsWorld: physicsWorld)
     }
 
     private func setupBackground() {
@@ -624,14 +614,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Enable physics after a short delay
         let enablePhysicsAction = SKAction.run { [self] in
-            #if DEBUG
             self.hero.physicsBody?.isDynamic = true
+            #if DEBUG
             print("Hero physics enabled - Current position: \(String(describing: self.hero.position))")
             #endif
         }
         
         hero.run(SKAction.sequence([
-            SKAction.wait(forDuration: 1/30),
+            SKAction.wait(forDuration: 10/30),
             enablePhysicsAction
         ]))
     }
@@ -720,19 +710,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // First 2 poles have guaranteed coins
             if poleSetCount <= 2 {
-                let patterns: [CollectiblePattern] = [.single, .triangle, .square, .cross, .star, .diagonal3, .diagonal5, .circle, .v2, .v3, .v4, .v5, .h2, .h3, .h4, .h5]
+                let patterns: [CollectiblePattern] = [.single, .triangle, .square, .cross]
                 let pattern = patterns[Int.random(in: 0..<patterns.count)]
-                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: pattern, isBurger: false)
+                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: pattern, collectibleType: .coin)
             }
-            // Spawn burger after every 5 poles
+            // Spawn food every 5 poles with equal probability
             else if poleSetCount % 5 == 0 {
-                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: .single, isBurger: true)
+                print("🍽️ Food spawn at pole set: \(poleSetCount)")
+                let foodTypes: [CollectibleType] = [.burger, .pizza, .sushi, .fries]
+                let randomFood = foodTypes[Int.random(in: 0..<foodTypes.count)]
+                print("🍴 Selected food type: \(randomFood)")
+                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: .single, collectibleType: randomFood)
+                
+                // Log available food in pools
+                print("📦 Pool status:")
+                print("  🍔 Burgers in pool: \(Collectable.shared.burgerPool.count)")
+                print("  🍕 Pizzas in pool: \(Collectable.shared.pizzaPool.count)")
+                print("  🍣 Sushi in pool: \(Collectable.shared.sushiPool.count)")
+                print("  🍟 Fries in pool: \(Collectable.shared.friesPool.count)")
             } 
             // Regular coin patterns for other poles
             else {
                 let patterns: [CollectiblePattern] = [.single, .triangle, .square, .cross]
                 let pattern = patterns[Int.random(in: 0..<patterns.count)]
-                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: pattern, isBurger: false)
+                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: pattern, collectibleType: .coin)
             }
         }
     }
@@ -954,6 +955,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if let burger = otherBody.node as? SKSpriteNode {
                 handleCollectibleCollection(burger, type: .burger)
             }
+        } else if otherBody.categoryBitMask == PhysicsCategory.pizza {
+            if let pizza = otherBody.node as? SKSpriteNode {
+                handleCollectibleCollection(pizza, type: .pizza)
+            }
+        } else if otherBody.categoryBitMask == PhysicsCategory.sushi {
+            if let sushi = otherBody.node as? SKSpriteNode {
+                handleCollectibleCollection(sushi, type: .sushi)
+            }
+        } else if otherBody.categoryBitMask == PhysicsCategory.fries {
+            if let fries = otherBody.node as? SKSpriteNode {
+                handleCollectibleCollection(fries, type: .fries)
+            }
         } else if otherBody.categoryBitMask == PhysicsCategory.scoreZone {
             if let scoreDetector = otherBody.node {
                 // Only increment score if we haven't already scored for this detector
@@ -983,6 +996,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             currentStamina = 100.0  // Full stamina restoration
             updateStaminaBar()
             _ = playSoundEffect("burger")
+        case .pizza:
+            coinScore += 2
+            coinCounterLabel.text = "\(coinScore)"
+            _ = playSoundEffect("coin")
+        case .sushi:
+            coinScore += 3
+            coinCounterLabel.text = "\(coinScore)"
+            _ = playSoundEffect("coin")
+        case .fries:
+            coinScore += 4
+            coinCounterLabel.text = "\(coinScore)"
+            _ = playSoundEffect("coin")
         }
         
         // Fade out and move up animation
@@ -1305,11 +1330,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         return scoreZone
     }
     
-    private func spawnCollectiblePattern(at basePosition: CGPoint, pattern: CollectiblePattern, isBurger: Bool) {
+    private func spawnCollectiblePattern(at basePosition: CGPoint, pattern: CollectiblePattern, collectibleType: CollectibleType) {
         let positions = pattern.getRelativePositions()
         
         for relativePos in positions {
-            let collectible = Collectable.shared.createCollectible(type: isBurger ? .burger : .coin)
+            let collectible = Collectable.shared.createCollectible(type: collectibleType)
             let finalPos = CGPoint(
                 x: basePosition.x + relativePos.x,
                 y: basePosition.y + relativePos.y
@@ -1325,6 +1350,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func updateHeroCollision() {
+
+        hero.physicsBody?.isDynamic = !isGamePaused
+        
         if let heroBody = hero.physicsBody {
             // Keep the hero's physics body dynamic and other properties unchanged
             heroBody.isDynamic = true
@@ -1355,13 +1383,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func togglePause() {
-        isGamePaused = !isGamePaused
-        pauseManager.togglePause(isGamePaused: isGamePaused, updateHeroCollision: updateHeroCollision)
-    }
-    
-    private func toggleGravity() {
-        isGravityEnabled.toggle()
-        physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
+        isGamePaused.toggle()
+        pauseManager.togglePause(isGamePaused: isGamePaused) { [weak self] in
+            self?.updateHeroCollision()
+        }
     }
     
     private func createPauseUI() {

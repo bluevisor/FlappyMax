@@ -73,6 +73,9 @@ enum SpriteType {
     case coin
     case coinIcon
     case burger
+    case pizza
+    case sushi
+    case fries
     case label
     case custom(scale: CGFloat)
 }
@@ -121,6 +124,27 @@ enum GameConfig {
         }
         
         static var burger: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.8
+            case .iPad: return 2.0
+            }
+        }
+
+        static var pizza: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.8
+            case .iPad: return 2.0
+            }
+        }
+
+        static var sushi: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.8
+            case .iPad: return 2.0
+            }
+        }
+
+        static var fries: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 1.8
             case .iPad: return 2.0
@@ -354,13 +378,32 @@ enum GameConfig {
         return globalGameScale * deviceScaleFactor * getDefaultScale(for: spriteType)
     }
     
-    static func adaptiveSize(for texture: SKTexture, 
-                             spriteType: SpriteType) -> CGSize {
-        let defaultScale = getDefaultScale(for: spriteType)
-        let scaleFactor = globalGameScale * deviceScaleFactor * defaultScale
+    static func adaptiveSize(
+        for texture: SKTexture, spriteType: SpriteType
+    ) -> CGSize {
+        let spriteType: SpriteType
+        
+        // Determine sprite type based on texture name
+        if texture.description.contains("coin") {
+            spriteType = .coin
+        } else if texture.description.contains("burger") {
+            spriteType = .burger
+        } else if texture.description.contains("pizza") {
+            spriteType = .pizza
+        } else if texture.description.contains("sushi") {
+            spriteType = .sushi
+        } else if texture.description.contains("fries") {
+            spriteType = .fries
+        } else {
+            spriteType = .custom(scale: 1.0)
+        }
+        
+        print("🎯 Using sprite type: \(spriteType) for texture: \(texture.description)")
+        
+        let scale = finalScale(for: spriteType)
         return CGSize(
-            width: texture.size().width * scaleFactor,
-            height: texture.size().height * scaleFactor
+            width: texture.size().width,
+            height: texture.size().height
         )
     }
     
@@ -376,6 +419,9 @@ enum GameConfig {
         case .coin: return Scales.coin
         case .coinIcon: return Scales.coinIcon
         case .burger: return Scales.burger
+        case .pizza: return Scales.pizza
+        case .sushi: return Scales.sushi
+        case .fries: return Scales.fries
         case .label: return Scales.label
         case .custom(let scale): return scale
         }
