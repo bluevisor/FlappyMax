@@ -163,7 +163,10 @@ class SettingsScene: SKScene {
             feedback.text = "Scoreboard Cleared!"
             feedback.fontSize = GameConfig.adaptiveFontSize(20)
             feedback.fontColor = .green
-            feedback.position = CGPoint(x: frame.midX, y: frame.midY - 150)
+            feedback.position = CGPoint(
+                x: frame.midX,
+                y: GameConfig.SafeMargin.bottom + 8
+            )
             feedback.alpha = 0
             addChild(feedback)
             

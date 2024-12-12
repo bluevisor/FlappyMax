@@ -336,9 +336,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         view.becomeFirstResponder()
         #endif
         
-        // Hide physics bodies
-        view.showsPhysics = true
-        
         // Log current volume and load sounds
         let currentVolume = UserDefaults.standard.float(forKey: "SFXVolume")
         #if DEBUG
@@ -549,13 +546,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let path = UIBezierPath()
         let width = node.size.width
         let height = node.size.height
-        let mountainHeight = large ? height * 0.3 : height * 0.2
+        let mountainHeight = large ? height * 0.25 : height * 0.15
         
         path.move(to: CGPoint(x: 0, y: 0))
         
         var x: CGFloat = 0
         while x < width {
-            let mountainWidth = large ? CGFloat.random(in: 100...200) : CGFloat.random(in: 60...120)
+            let mountainWidth = large ? CGFloat.random(in: 150...300) : CGFloat.random(in: 80...160)
             let peakHeight = CGFloat.random(in: mountainHeight/2...mountainHeight)
             
             path.addLine(to: CGPoint(x: x + mountainWidth/2, y: peakHeight))
@@ -607,6 +604,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         print("Hero setup - Hero size: \(hero.size)")
         print("Scene setup - Frame dimensions: \(frame.width) x \(frame.height)")
         print("Scene setup - Floor height: \(GameConfig.Metrics.floorHeight)")
+        print("Scene setup - Pole width: \(GameConfig.Metrics.poleWidth), pole spacing: \(GameConfig.Metrics.poleSpacing)")
         #endif
         
         hero.zPosition = 3

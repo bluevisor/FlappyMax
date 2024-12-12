@@ -236,7 +236,7 @@ enum GameConfig {
 
         static var polePairGap: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 146.0
+            case .iPhone: return 158.0
             case .iPad: return 168.0
             }
         }
@@ -245,7 +245,7 @@ enum GameConfig {
 
         static var poleSpacing: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return poleWidth * 7.5
+            case .iPhone: return poleWidth * 9.3
             case .iPad: return poleWidth * 6.5
             }
         }
@@ -320,20 +320,20 @@ enum GameConfig {
         static var gravity: CGFloat {
             switch DeviceType.current {
             case .iPhone: return -8.0
-            case .iPad: return -9.5
+            case .iPad: return -9.8
             }
         }
 
         static var flapImpulse: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 92.0
-            case .iPad: return 132.0
+            case .iPhone: return 98.0
+            case .iPad: return 128.0
             }
         }
 
         static var gameSpeed: CGFloat {
             switch DeviceType.current {
-            case .iPhone: return 380.0
+            case .iPhone: return 420.0
             case .iPad: return 630.0
             }
         }

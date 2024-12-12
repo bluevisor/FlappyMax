@@ -192,7 +192,7 @@ class GameOverScene: SKScene {
                 let coinTexture = coinAtlas.textureNamed("coin_12")
                 let coinIcon = SKSpriteNode(texture: coinTexture)
                 coinIcon.size = CGSize(width: GameConfig.adaptiveFontSize(18), height: GameConfig.adaptiveFontSize(18))
-                coinIcon.position = CGPoint(x: spacing * 0.7, y: GameConfig.adaptiveFontSize(18) * 0.3)
+                coinIcon.position = CGPoint(x: spacing * 0.7, y: GameConfig.adaptiveFontSize(18) * 0.35)
                 scoreContainer.addChild(coinIcon)
                 
                 scoreContainer.position = CGPoint(x: spacing * 3.0, y: yPos)
@@ -205,18 +205,17 @@ class GameOverScene: SKScene {
         }
         
         // Restart and Menu Buttons
-        let yShift = spacing * 3.5
         let restartButton = SKLabelNode(fontNamed: "Helvetica")
         restartButton.text = "Restart"
-        restartButton.fontSize = GameConfig.adaptiveFontSize(28)
-        restartButton.position = CGPoint(x: -spacing * 2, y: -yShift)
+        restartButton.fontSize = DeviceType.current == .iPhone ? 28 : 42
+        restartButton.position = CGPoint(x: -spacing * 2.5, y: -spacing * 3.5)
         restartButton.name = "restartButton"
         contentNode.addChild(restartButton)
         
         let menuButton = SKLabelNode(fontNamed: "Helvetica")
         menuButton.text = "Main Menu"
-        menuButton.fontSize = GameConfig.adaptiveFontSize(28)
-        menuButton.position = CGPoint(x: spacing * 2, y: -yShift)
+        menuButton.fontSize = DeviceType.current == .iPhone ? 28 : 42
+        menuButton.position = CGPoint(x: spacing * 2.5, y: -spacing * 3.5)
         menuButton.name = "menuButton"
         contentNode.addChild(menuButton)
         
