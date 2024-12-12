@@ -379,31 +379,14 @@ enum GameConfig {
     }
     
     static func adaptiveSize(
-        for texture: SKTexture, spriteType: SpriteType
+        for texture: SKTexture,
+        spriteType: SpriteType
     ) -> CGSize {
-        let spriteType: SpriteType
-        
-        // Determine sprite type based on texture name
-        if texture.description.contains("coin") {
-            spriteType = .coin
-        } else if texture.description.contains("burger") {
-            spriteType = .burger
-        } else if texture.description.contains("pizza") {
-            spriteType = .pizza
-        } else if texture.description.contains("sushi") {
-            spriteType = .sushi
-        } else if texture.description.contains("fries") {
-            spriteType = .fries
-        } else {
-            spriteType = .custom(scale: 1.0)
-        }
-        
         print("🎯 Using sprite type: \(spriteType) for texture: \(texture.description)")
-        
         let scale = finalScale(for: spriteType)
         return CGSize(
-            width: texture.size().width,
-            height: texture.size().height
+            width: texture.size().width * scale,
+            height: texture.size().height * scale
         )
     }
     

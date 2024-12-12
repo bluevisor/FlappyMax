@@ -132,7 +132,9 @@ class Collectable {
     }
     
     func createCollectible(type: CollectibleType) -> SKSpriteNode {
-        print("🎮 Creating collectible of type: \(type)")
+        #if DEBUG
+        print("  Creating collectible of type: \(type)")
+        #endif
         let collectible: SKSpriteNode
         switch type {
         case .coin:
@@ -153,7 +155,9 @@ class Collectable {
                 activeBurgers.append(burger)
             } else {
                 let texture = SKTexture(imageNamed: "burger")
+                #if DEBUG
                 print("🍔 Creating burger with texture: \(texture.description)")
+                #endif
                 collectible = createCollectable(texture: texture, physicsCategory: PhysicsCategory.burger)
                 activeBurgers.append(collectible)
             }
@@ -164,8 +168,19 @@ class Collectable {
                 activePizzas.append(pizza)
             } else {
                 let texture = SKTexture(imageNamed: "pizza")
-                print("🍕 Creating pizza with texture: \(texture.description)")
-                collectible = createCollectable(texture: texture, physicsCategory: PhysicsCategory.pizza)
+                #if DEBUG
+                print("🍕 Creating pizza - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
+                #endif
+                if texture.size().width == 0 {
+                    #if DEBUG
+                    print("⚠️ Failed to load pizza texture!")
+                    #endif
+                    // Fallback to burger texture for debugging
+                    let fallbackTexture = SKTexture(imageNamed: "burger")
+                    collectible = createCollectable(texture: fallbackTexture, physicsCategory: PhysicsCategory.pizza)
+                } else {
+                    collectible = createCollectable(texture: texture, physicsCategory: PhysicsCategory.pizza)
+                }
                 activePizzas.append(collectible)
             }
         case .sushi:
@@ -175,8 +190,19 @@ class Collectable {
                 activeSushis.append(sushi)
             } else {
                 let texture = SKTexture(imageNamed: "sushi")
-                print("🍣 Creating sushi with texture: \(texture.description)")
-                collectible = createCollectable(texture: texture, physicsCategory: PhysicsCategory.sushi)
+                #if DEBUG
+                print("🍣 Creating sushi - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
+                #endif
+                if texture.size().width == 0 {
+                    #if DEBUG
+                    print("⚠️ Failed to load sushi texture!")
+                    #endif
+                    // Fallback to burger texture for debugging
+                    let fallbackTexture = SKTexture(imageNamed: "burger")
+                    collectible = createCollectable(texture: fallbackTexture, physicsCategory: PhysicsCategory.sushi)
+                } else {
+                    collectible = createCollectable(texture: texture, physicsCategory: PhysicsCategory.sushi)
+                }
                 activeSushis.append(collectible)
             }
         case .fries:
@@ -186,8 +212,19 @@ class Collectable {
                 activeFries.append(fries)
             } else {
                 let texture = SKTexture(imageNamed: "fries")
-                print("🍟 Creating fries with texture: \(texture.description)")
-                collectible = createCollectable(texture: texture, physicsCategory: PhysicsCategory.fries)
+                #if DEBUG
+                print("🍟 Creating fries - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
+                #endif
+                if texture.size().width == 0 {
+                    #if DEBUG
+                    print("⚠️ Failed to load fries texture!")
+                    #endif
+                    // Fallback to burger texture for debugging
+                    let fallbackTexture = SKTexture(imageNamed: "burger")
+                    collectible = createCollectable(texture: fallbackTexture, physicsCategory: PhysicsCategory.fries)
+                } else {
+                    collectible = createCollectable(texture: texture, physicsCategory: PhysicsCategory.fries)
+                }
                 activeFries.append(collectible)
             }
         }
@@ -243,29 +280,39 @@ class Collectable {
         }
     }
 
-    private func createCollectable(
-        texture: SKTexture,
-        physicsCategory: UInt32
-    ) -> SKSpriteNode {
-        texture.filteringMode = .nearest
-        print("🎨 Creating collectible with texture size: \(texture.size())")
+    private func createCollectable(texture: SKTexture, physicsCategory: UInt32) -> SKSpriteNode {
+        let sprite = SKSpriteNode(texture: texture)
         
-        // Use GameConfig's adaptive sizing for consistent scaling
-        let scaledSize = GameConfig.adaptiveSize(
-            for: texture,
-            baseSize: texture.size()
-        )
-        print("📏 Scaled size: \(scaledSize)")
+        // Set size based on type
+        switch physicsCategory {
+        case PhysicsCategory.coin:
+            sprite.size = GameConfig.adaptiveSize(for: texture, spriteType: .coin)
+        case PhysicsCategory.burger:
+            sprite.size = GameConfig.adaptiveSize(for: texture, spriteType: .burger)
+        case PhysicsCategory.pizza:
+            sprite.size = GameConfig.adaptiveSize(for: texture, spriteType: .pizza)
+        case PhysicsCategory.sushi:
+            sprite.size = GameConfig.adaptiveSize(for: texture, spriteType: .sushi)
+        case PhysicsCategory.fries:
+            sprite.size = GameConfig.adaptiveSize(for: texture, spriteType: .fries)
+        default:
+            sprite.size = GameConfig.adaptiveSize(for: texture, spriteType: .coin)
+        }
         
-        let sprite = SKSpriteNode(texture: texture, size: scaledSize)
-        sprite.physicsBody = SKPhysicsBody(circleOfRadius: scaledSize.width / 2)
+        // Set up physics body AFTER setting the size
+        sprite.physicsBody = SKPhysicsBody(circleOfRadius: sprite.size.width / 2)
         sprite.physicsBody?.isDynamic = false
         sprite.physicsBody?.categoryBitMask = physicsCategory
-        sprite.physicsBody?.collisionBitMask = 0
         sprite.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+        sprite.physicsBody?.collisionBitMask = 0
         
-        sprite.name = physicsCategory == PhysicsCategory.coin ? "coin" : physicsCategory == PhysicsCategory.burger ? "burger" : physicsCategory == PhysicsCategory.pizza ? "pizza" : physicsCategory == PhysicsCategory.sushi ? "sushi" : "fries"
+        // Set name for identification
+        sprite.name = physicsCategory == PhysicsCategory.coin ? "coin" : 
+                     physicsCategory == PhysicsCategory.burger ? "burger" : 
+                     physicsCategory == PhysicsCategory.pizza ? "pizza" : 
+                     physicsCategory == PhysicsCategory.sushi ? "sushi" : "fries"
         
+        // Set up coin animation if it's a coin
         if physicsCategory == PhysicsCategory.coin {
             setupCoinAnimation(for: sprite)
         }
