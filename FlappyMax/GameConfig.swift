@@ -73,6 +73,9 @@ enum SpriteType {
     case coin
     case coinIcon
     case burger
+    case pizza
+    case sushi
+    case fries
     case label
     case custom(scale: CGFloat)
 }
@@ -121,6 +124,27 @@ enum GameConfig {
         }
         
         static var burger: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.8
+            case .iPad: return 2.0
+            }
+        }
+
+        static var pizza: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.8
+            case .iPad: return 2.0
+            }
+        }
+
+        static var sushi: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 1.8
+            case .iPad: return 2.0
+            }
+        }
+
+        static var fries: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 1.8
             case .iPad: return 2.0
@@ -354,13 +378,15 @@ enum GameConfig {
         return globalGameScale * deviceScaleFactor * getDefaultScale(for: spriteType)
     }
     
-    static func adaptiveSize(for texture: SKTexture, 
-                             spriteType: SpriteType) -> CGSize {
-        let defaultScale = getDefaultScale(for: spriteType)
-        let scaleFactor = globalGameScale * deviceScaleFactor * defaultScale
+    static func adaptiveSize(
+        for texture: SKTexture,
+        spriteType: SpriteType
+    ) -> CGSize {
+        print("🎯 Using sprite type: \(spriteType) for texture: \(texture.description)")
+        let scale = finalScale(for: spriteType)
         return CGSize(
-            width: texture.size().width * scaleFactor,
-            height: texture.size().height * scaleFactor
+            width: texture.size().width * scale,
+            height: texture.size().height * scale
         )
     }
     
@@ -376,6 +402,9 @@ enum GameConfig {
         case .coin: return Scales.coin
         case .coinIcon: return Scales.coinIcon
         case .burger: return Scales.burger
+        case .pizza: return Scales.pizza
+        case .sushi: return Scales.sushi
+        case .fries: return Scales.fries
         case .label: return Scales.label
         case .custom(let scale): return scale
         }

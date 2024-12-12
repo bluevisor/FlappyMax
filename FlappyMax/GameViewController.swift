@@ -35,7 +35,7 @@ import AVFoundation
 class GameViewController: UIViewController {
     private var loadingScene: LoadingScene?
     private var assetsLoaded = 0
-    private let totalAssets = 11 // Total number of assets to load (textures + sounds)
+    private let totalAssets = 29 // Total number of assets to load (textures + sounds)
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -96,7 +96,7 @@ class GameViewController: UIViewController {
     
     private func preloadGameAssets() {
         // Preload textures
-        let textureNames = ["flappymax_title_white", "hero", "pole_top", "pole_bottom", "coin", "burger"]
+        let textureNames = ["flappymax_title_white", "max", "pole", "burger", "pizza", "sushi", "fries"]
         textureNames.forEach { textureName in
             let texture = SKTexture(imageNamed: textureName)
             texture.preload { [weak self] in
@@ -104,10 +104,20 @@ class GameViewController: UIViewController {
             }
         }
         
+        // Preload textures from atlas
+        let coinAtlas = SKTextureAtlas(named: "coin")
+        (1...15).forEach { index in
+            let textureName = String(format: "coin_%02d", index)
+            let texture = coinAtlas.textureNamed(textureName)
+            texture.preload { [weak self] in
+                self?.updateLoadingProgress()
+            }
+        }
+        
         // Preload sound effects
-        let soundNames = ["flap", "coin", "burger", "game_over", "game_start"]
+        let soundNames = ["flap", "coin", "burger", "game_over", "game_start", "click", "swoosh"]
         soundNames.forEach { name in
-            if let url = Bundle.main.url(forResource: name, withExtension: name == "flap" ? "caf" : "mp3") {
+            if let url = Bundle.main.url(forResource: name, withExtension: "m4a") {
                 DispatchQueue.main.async { [weak self] in
                     let player = try? AVAudioPlayer(contentsOf: url)
                     player?.prepareToPlay()
