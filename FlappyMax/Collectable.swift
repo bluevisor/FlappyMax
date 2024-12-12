@@ -94,12 +94,16 @@ class Collectable {
             let coinAtlas = SKTextureAtlas(named: "coin")
             let coinTexture = coinAtlas.textureNamed("coin_01")
             let coin = createCollectable(texture: coinTexture, physicsCategory: PhysicsCategory.coin)
+            let coinAtlas = SKTextureAtlas(named: "coin")
+            let coinTexture = coinAtlas.textureNamed("coin_01")
+            let coin = createCollectable(texture: coinTexture, physicsCategory: PhysicsCategory.coin)
             coin.removeFromParent() // Ensure it's not in the scene
             coinPool.append(coin)
         }
         
         // Initialize burger pool
         for _ in 0..<burgerCount {
+            let burger = createCollectable(texture: SKTexture(imageNamed: "burger.png"), physicsCategory: PhysicsCategory.burger)
             let burger = createCollectable(texture: SKTexture(imageNamed: "burger.png"), physicsCategory: PhysicsCategory.burger)
             burger.name = "burger"
             burger.removeFromParent() // Ensure it's not in the scene
@@ -274,7 +278,13 @@ class Collectable {
         collectible.alpha = 1.0
         collectible.removeAllActions()
         
+        // Reset visual properties
+        collectible.alpha = 1.0
+        collectible.removeAllActions()
+        
         if collectible.name == "coin" {
+            // Restart coin animation
+            setupCoinAnimation(for: collectible)
             // Restart coin animation
             setupCoinAnimation(for: collectible)
         }
@@ -325,6 +335,8 @@ class Collectable {
         var frames: [SKTexture] = []
         
         // Load all frames from the coin atlas
+        
+        // Load all frames from the coin atlas
         for i in 1...15 {
             let textureName = String(format: "coin_%02d", i)
             let texture = coinAtlas.textureNamed(textureName)
@@ -332,6 +344,8 @@ class Collectable {
             frames.append(texture)
         }
         
+        // Create animation action at 30fps
+        let spinAction = SKAction.animate(with: frames, timePerFrame: 1.0/30.0)
         // Create animation action at 30fps
         let spinAction = SKAction.animate(with: frames, timePerFrame: 1.0/30.0)
         let repeatSpin = SKAction.repeatForever(spinAction)

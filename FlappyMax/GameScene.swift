@@ -94,6 +94,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Hero Configuration
     internal var hero: SKSpriteNode!
+<<<<<<< HEAD
+=======
+    internal var stamina: CGFloat = 100.0
+    internal let staminaDepletion: CGFloat = 2.8
+    internal let staminaReplenishment: CGFloat = 25.0
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
 
     // MARK: - Floor Configuration
     internal var floorSpeed: CGFloat { GameConfig.Physics.gameSpeed * 1.3 }  // 20% faster than game speed
@@ -101,7 +107,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Pole & Collectible Configuration
     internal var poleSpacing: CGFloat = GameConfig.scaled(GameConfig.Metrics.poleSpacing)  // Spacing between poles
+<<<<<<< HEAD
     internal let numberOfPolePairs = 4
+=======
+    internal let numberOfPolePairs = 3
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
     internal var poleNodes: [SKNode] = []
     
     // Pools and Grids
@@ -160,7 +170,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
                 if !players.isEmpty {
                     audioPlayers[sound] = players
+<<<<<<< HEAD
                     #if DEBUG
+=======
+                    #if !RELEASE
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
                     print("Successfully cached \(players.count) players for: \(sound)")
                     #endif
                 }
@@ -168,7 +182,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 // Single player for other sounds
                 if let player = createAudioPlayer(for: sound) {
                     audioPlayers[sound] = player
+<<<<<<< HEAD
                     #if DEBUG
+=======
+                    #if !RELEASE
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
                     print("Successfully cached sound: \(sound)")
                     #endif
                 }
@@ -182,7 +200,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Try to get the URL for the sound file
         guard let url = Bundle.main.url(forResource: name, withExtension: fileExtension) else {
+<<<<<<< HEAD
             #if DEBUG
+=======
+            #if !RELEASE
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
             print("Could not find sound file: \(name).\(fileExtension)")
             #endif
             return nil
@@ -193,7 +215,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             player.prepareToPlay()
             return player
         } catch {
+<<<<<<< HEAD
             #if DEBUG
+=======
+            #if !RELEASE
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
             print("Could not create audio player for \(name): \(error)")
             #endif
             return nil
@@ -251,12 +277,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     #endif
 
     private var pauseButton: SKSpriteNode!
+<<<<<<< HEAD
+=======
+    private var isGamePaused = false
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
+<<<<<<< HEAD
         let touchedNodes = nodes(at: location)
 
+=======
+        
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         if isGameOver { return }  // Let GameOverScene handle restart
         
         // Check if pause button was tapped
@@ -264,6 +298,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             togglePause()
             return
         }
+<<<<<<< HEAD
 
         for node in touchedNodes {
             if node.name == "resumeButton" {
@@ -275,6 +310,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Only handle game input if not paused
         if !isGamePaused {
             #if DEBUG
+=======
+        
+        // Only handle game input if not paused
+        if !isGamePaused {
+            #if !RELEASE
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
             print("Calling flap()")
             #endif
             flap()
@@ -283,7 +324,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     #if targetEnvironment(macCatalyst)
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+<<<<<<< HEAD
         #if DEBUG
+=======
+        #if !RELEASE
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         print("\n=== Keyboard Event in GameScene ===")
         for press in presses {
             if let key = press.key {
@@ -301,7 +346,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Check for both space and return key
             if key.charactersIgnoringModifiers == " " || key.keyCode == 44 {  // Space key
+<<<<<<< HEAD
                 #if DEBUG
+=======
+                #if !RELEASE
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
                 print("Space pressed, calling flap()")
                 #endif
                 flap()
@@ -323,6 +372,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         view.isUserInteractionEnabled = true
         view.becomeFirstResponder()
         #endif
+<<<<<<< HEAD
+=======
+        
+        // Hide physics bodies
+        view.showsPhysics = true
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         
         // Log current volume and load sounds
         let currentVolume = UserDefaults.standard.float(forKey: "SFXVolume")
@@ -342,7 +397,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupLabels()
         setupStaminaBar()
         setupPauseButton()
+<<<<<<< HEAD
         setupPauseManager()
+=======
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
 
         cleanupScene()
         
@@ -465,19 +523,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.setScale(0.25)
         
         // Position in bottom left corner with padding
+<<<<<<< HEAD
         pauseButton.position = CGPoint(
             x: pauseButton.size.width/2 + GameConfig.SafeMargin.left,
             y: pauseButton.size.height/2 + GameConfig.SafeMargin.bottom
+=======
+        let padding: CGFloat = 20.0
+        pauseButton.position = CGPoint(
+            x: pauseButton.size.width/2 + padding,
+            y: pauseButton.size.height/2 + padding
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         )
         
         // Add to UI layer to prevent parallax effects
         uiLayer.addChild(pauseButton)
     }
 
+<<<<<<< HEAD
     private func setupPauseManager() {
         pauseManager = PauseManager(scene: self, physicsWorld: physicsWorld)
     }
 
+=======
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
     private func setupBackground() {
         // Create three parallax layers
         for layerIndex in 0..<3 {
@@ -678,14 +746,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         Pole.shared.initializePolePool(count: 6)
         
         // Initialize collectible pool
+<<<<<<< HEAD
         Collectable.shared.initializeCollectiblePool(coinCount: 25, burgerCount: 3, pizzaCount: 3, sushiCount: 3, friesCount: 3)
+=======
+        Collectable.shared.initializeCollectiblePool(coinCount: 25, burgerCount: 3)
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
 
         // Reset pole count for initial spawning
         poleSetCount = 0
         
+<<<<<<< HEAD
         // Spawn initial poles
         for _ in 0..<3 {
             spawnPoleSet()
+=======
+        // Spawn initial segments with guaranteed coins in first 2 pole pairs
+        var lastX = frame.width
+        for i in 0..<3 {
+            let xPos = lastX + (i > 0 ? poleSpacing : 0)
+            #if !RELEASE
+            print("Spawning initial segment \(i) at x = \(xPos)")
+            #endif
+            spawnInitialSegment(at: xPos, segmentIndex: i)
+            lastX = xPos
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         }
     }
     
@@ -756,6 +840,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func positionPoleSet(_ poleSet: SKNode, atX xPos: CGFloat) {
+<<<<<<< HEAD
         #if DEBUG
         print("📍 Positioning pole set - Initial xPos: \(xPos)")
         #endif
@@ -763,12 +848,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
         let minY = gap/2 + GameConfig.Metrics.poleSetVerticalMargin + GameConfig.Metrics.floorHeight
         let maxY = frame.height - gap/2 - GameConfig.Metrics.poleSetVerticalMargin
+=======
+        let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
+        let margin = GameConfig.scaled(GameConfig.Metrics.poleMargin)
+        let minY = gap/2 + margin + GameConfig.Metrics.floorHeight
+        let maxY = frame.height - gap/2 - margin
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         
         // Generate random Y position within safe bounds
         let yPos = CGFloat.random(in: minY...maxY)
         
         poleSet.position = CGPoint(x: xPos, y: yPos)
         poleSet.zPosition = 1
+<<<<<<< HEAD
         
         #if DEBUG
         print("📍 Final pole position - x: \(xPos), y: \(yPos), minY: \(minY), maxY: \(maxY)")
@@ -779,6 +871,38 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func moveGameObjects(deltaTime: TimeInterval) {
         let baseSpeed = GameConfig.Physics.gameSpeed * CGFloat(deltaTime)
         
+=======
+    }
+
+    func spawnInitialSegment(at xPosition: CGFloat, segmentIndex: Int) {
+        // Always spawn a pole
+        if let poleSet = Pole.shared.getPooledPoleSet() {
+            // Ensure first pole starts off screen
+            let adjustedX = segmentIndex == 0 ? frame.width + poleSet.frame.width : xPosition
+            positionPoleSet(poleSet, atX: adjustedX)
+            addChild(poleSet)
+            poleNodes.append(poleSet)
+            
+            poleCount += 1
+            
+            // Guaranteed coins in first 2 pole pairs
+            if segmentIndex < 2 {
+                let collectibleX = adjustedX + poleSpacing/2
+                let centerY = GameConfig.Metrics.floorHeight + (frame.height - GameConfig.Metrics.floorHeight)/2
+                
+                // Choose a random coin pattern for guaranteed spawns
+                let patterns: [CollectiblePattern] = [.single, .triangle, .square, .cross, .star, .diagonal3, .diagonal5, .circle, .v2, .v3, .v4, .v5, .h2, .h3, .h4, .h5]
+                let pattern = patterns[Int.random(in: 0..<patterns.count)]
+                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: pattern, isBurger: false)
+            }
+        }
+    }
+
+    // MARK: - Movement Management
+    private func moveGameObjects(deltaTime: TimeInterval) {
+        let baseSpeed = GameConfig.Physics.gameSpeed * CGFloat(deltaTime)
+        
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         // Move floor faster (1.3x base speed)
         moveFloor(speed: baseSpeed * 1.3)
         
@@ -853,6 +977,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 Collectable.shared.recycleCollectible(burger)
             }
         }
+<<<<<<< HEAD
         
         // Move active pizzas
         for pizza in Collectable.shared.activePizzas {
@@ -875,17 +1000,109 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             fries.position.x -= speed
             if fries.position.x < -frame.width {
                 Collectable.shared.recycleCollectible(fries)
+=======
+    }
+    
+    private func spawnPoleSet() {
+        if let poleSet = Pole.shared.getPooledPoleSet() {
+            let xPos = poleNodes.isEmpty ? 
+                frame.width + poleSet.frame.width : // First pole starts just off screen
+                poleNodes.last!.position.x + poleSpacing // Use consistent pole spacing
+                
+            positionPoleSet(poleSet, atX: xPos)
+            addChild(poleSet)
+            poleNodes.append(poleSet)
+            poleCount += 1
+            
+            // Spawn collectibles between poles
+            let collectibleX = xPos + poleSpacing/2 // Center between current and next pole
+            let centerY = GameConfig.Metrics.floorHeight + (frame.height - GameConfig.Metrics.floorHeight)/2
+            
+            // Spawn burger after every 5 poles, always in single pattern
+            if poleCount % 5 == 0 {
+                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: .single, isBurger: true)
+            } else {
+                // Choose a random coin pattern
+                let patterns: [CollectiblePattern] = [.single, .triangle, .square, .cross]
+                let pattern = patterns[Int.random(in: 0..<patterns.count)]
+                spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: pattern, isBurger: false)
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
             }
         }
     }
     
+<<<<<<< HEAD
+=======
+    private func recyclePoleSet(_ poleSet: SKNode) {
+        if let index = poleNodes.firstIndex(of: poleSet) {
+            poleNodes.remove(at: index)
+            poleSet.removeFromParent()
+            Pole.shared.recyclePoleSet(poleSet)  // Make sure to recycle back to the pool
+        }
+    }
+
+    // MARK: - Input Handling
+    
+    #if targetEnvironment(macCatalyst) || os(iOS)
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        guard !isGameOver else { return }
+        
+        for press in presses {
+            if press.key?.keyCode == .keyboardSpacebar {
+                flap()
+                return
+            }
+        }
+        super.pressesBegan(presses, with: event)
+    }
+    #endif
+    
+    #if targetEnvironment(macCatalyst)
+    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        #if !RELEASE
+        print("\n=== Keyboard Event ===")
+        for press in presses {
+            if let key = press.key {
+                print("Key pressed: \(key.charactersIgnoringModifiers ?? "")")
+            }
+        }
+        print("Game over state: \(isGameOver)")
+        #endif
+        
+        guard !isGameOver else {
+            #if !RELEASE
+            print("Game is over, restarting...")
+            #endif
+            restartGame()
+            return
+        }
+        
+        for press in presses {
+            if let key = press.key, key.charactersIgnoringModifiers == " " {
+                #if !RELEASE
+                print("Spacebar pressed, calling flap()")
+                #endif
+                flap()
+                return
+            }
+        }
+        
+        super.pressesBegan(presses, with: event)
+    }
+    #endif
+
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
     private func flap() {
         guard !isGameOver else { return }
         
         if currentStamina > 0 {
             hero.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
             hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: flapImpulse))
+<<<<<<< HEAD
             currentStamina -= staminaDecreaseRate
+=======
+            currentStamina -= staminaDepletion
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
             updateStaminaBar()
             _ = playSoundEffect("flap")
         }
@@ -926,9 +1143,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             otherBody = contact.bodyA
         }
         
+<<<<<<< HEAD
         // Handle collisions only if collision is enabled
         if (otherBody.categoryBitMask == PhysicsCategory.pole || otherBody.categoryBitMask == PhysicsCategory.floor) 
             && isHeroCollisionEnabled {
+=======
+        // Handle collisions
+        if otherBody.categoryBitMask == PhysicsCategory.pole || otherBody.categoryBitMask == PhysicsCategory.floor {
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
             gameOver(reason: .collision)
         } else if otherBody.categoryBitMask == PhysicsCategory.coin {
             if let coin = otherBody.node as? SKSpriteNode {
@@ -938,6 +1160,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if let burger = otherBody.node as? SKSpriteNode {
                 handleCollectibleCollection(burger, type: .burger)
             }
+<<<<<<< HEAD
         } else if otherBody.categoryBitMask == PhysicsCategory.pizza {
             if let pizza = otherBody.node as? SKSpriteNode {
                 handleCollectibleCollection(pizza, type: .pizza)
@@ -950,6 +1173,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if let fries = otherBody.node as? SKSpriteNode {
                 handleCollectibleCollection(fries, type: .fries)
             }
+=======
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         } else if otherBody.categoryBitMask == PhysicsCategory.scoreZone {
             if let scoreDetector = otherBody.node {
                 // Only increment score if we haven't already scored for this detector
@@ -965,6 +1190,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func handleCollectibleCollection(_ collectible: SKSpriteNode, type: CollectibleType) {
         // Immediately mark as collected and disable physics to prevent multiple collisions
         Collectable.shared.markAsCollected(collectible)
+<<<<<<< HEAD
         collectible.physicsBody?.categoryBitMask = 0
         collectible.physicsBody?.contactTestBitMask = 0
         
@@ -979,16 +1205,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             coinCounterLabel.text = "\(coinScore)"
             _ = playSoundEffect("coin")
         case .burger, .pizza, .sushi, .fries:
+=======
+        // collectible.physicsBody = nil
+        collectible.physicsBody?.categoryBitMask = 0
+        collectible.physicsBody?.contactTestBitMask = 0
+        
+        switch type {
+        case .coin:
+            coinScore += 1
+            coinScoreLabel.text = "\(coinScore)"
+            _ = playSoundEffect("coin")
+        case .burger:
+            burgerScore += 1
+            stamina = 100.0  // Full stamina restoration
+            updateStaminaBar()
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
             _ = playSoundEffect("burger")
         }
         
         // Fade out and move up animation
         let fadeOut = SKAction.fadeOut(withDuration: 0.5)
+<<<<<<< HEAD
         fadeOut.timingMode = .easeOut
+=======
+
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         let moveUp = SKAction.moveBy(x: 0, y: 80, duration: 0.5)
         moveUp.timingMode = .easeOut
         let recycle = SKAction.run {
             Collectable.shared.recycleCollectible(collectible)
+<<<<<<< HEAD
         }
         let collectibleSequence = SKAction.sequence([
             SKAction.group([fadeOut, moveUp]),
@@ -1003,12 +1249,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             addChild(poleSet)
             poleNodes.append(poleSet)
         }
+=======
+        }
+        let collectibleSequence = SKAction.sequence([fadeOut, moveUp, recycle])
+        collectible.run(collectibleSequence)
+    }
+    
+    private func spawnPole(at position: CGPoint) {
+        if let poleSet = Pole.shared.getPooledPoleSet() {
+            poleSet.position = position
+            addChild(poleSet)
+            poleNodes.append(poleSet)
+        }
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
     }
     
     private func getNextPolePosition() -> CGPoint {
         let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
+<<<<<<< HEAD
         let minY = gap/2 + GameConfig.Metrics.poleSetVerticalMargin + GameConfig.Metrics.floorHeight
         let maxY = frame.height - gap/2 - GameConfig.Metrics.poleSetVerticalMargin
+=======
+        let margin = GameConfig.scaled(GameConfig.Metrics.poleMargin)
+        let minY = gap/2 + margin + GameConfig.Metrics.floorHeight
+        let maxY = frame.height - gap/2 - margin
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         
         // Generate random Y position within safe bounds
         let yPos = CGFloat.random(in: minY...maxY)
@@ -1149,6 +1414,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Calculate delta time
         if lastUpdateTime == 0 {
             lastUpdateTime = currentTime
+<<<<<<< HEAD
             return  // Skip first frame to ensure proper initialization
         }
         
@@ -1158,10 +1424,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         let deltaTime = min(currentTime - lastUpdateTime, 1.0/30.0) // Cap delta time to prevent large jumps
+=======
+        }
+        let deltaTime = currentTime - lastUpdateTime
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         lastUpdateTime = currentTime
         
         // Move game objects
         moveGameObjects(deltaTime: deltaTime)
+<<<<<<< HEAD
+=======
+        
+        // Update stamina
+        if currentStamina < maxStamina {
+            currentStamina = min(maxStamina, currentStamina + (staminaReplenishment * CGFloat(deltaTime)))
+            updateStaminaBar()
+        }
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
     }
     
     // MARK: - Game Over
@@ -1196,6 +1475,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // MARK: - Reset Game
     private func restartGame() {
+<<<<<<< HEAD
         #if DEBUG
         print("Restarting game...")
         #endif
@@ -1227,6 +1507,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         poleNodes.forEach { Pole.shared.recyclePoleSet($0) }
         poleNodes.removeAll()
         
+=======
+        #if !RELEASE
+        print("Restarting game...")
+        #endif
+        
+        // Clean up the scene
+        cleanupScene()
+        
+        // Reset hero position
+        hero.position = CGPoint(x: frame.width * 0.3, y: frame.height * 0.5)
+        hero.zRotation = 0
+        hero.physicsBody?.velocity = .zero
+        
+        // Reset game state
+        isGameOver = false
+        currentStamina = maxStamina
+        
+        // Update UI
+        updateStaminaBar()
+        
+        #if !RELEASE
+        print("Game restarted")
+        #endif
+    }
+    
+    private func cleanupScene() {
+        // Remove and recycle all collectibles
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
         self.children.forEach { node in
             if let collectible = node as? SKSpriteNode {
                 if collectible.name == "coin" || collectible.name == "burger" {
@@ -1474,8 +1782,111 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         coinCounterLabel.text = "0"
         updateStaminaBar()
         
+<<<<<<< HEAD
         #if DEBUG
         print("Scene cleaned up")
         #endif
+=======
+        #if !RELEASE
+        print("Scene cleaned up")
+        #endif
+    }
+    
+    // MARK: - Node Tracking
+    private func createPoleSet(at position: CGPoint) -> (SKSpriteNode, SKSpriteNode) {
+        let gapHeight = GameConfig.Metrics.polePairGap
+        let poleTexture = SKTexture(imageNamed: "pole")
+        let scaledSize = GameConfig.adaptiveSize(for: poleTexture, spriteType: .pole)
+        
+        // Create top pole
+        let topPole = SKSpriteNode(texture: poleTexture)
+        topPole.size = scaledSize
+        topPole.position = CGPoint(x: position.x, y: position.y + gapHeight/2)
+        topPole.zRotation = .pi
+        
+        // Create bottom pole
+        let bottomPole = SKSpriteNode(texture: poleTexture)
+        bottomPole.size = scaledSize
+        bottomPole.position = CGPoint(x: position.x, y: position.y - gapHeight/2)
+        
+        // Setup physics for both poles
+        for pole in [topPole, bottomPole] {
+            pole.physicsBody = SKPhysicsBody(rectangleOf: pole.size)
+            pole.physicsBody?.isDynamic = false
+            pole.physicsBody?.categoryBitMask = PhysicsCategory.pole
+            pole.physicsBody?.collisionBitMask = PhysicsCategory.hero
+            pole.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+        }
+        
+        return (topPole, bottomPole)
+    }
+    
+    private func createScoreZone() -> SKNode {
+        let scoreZone = SKNode()
+        let size = CGSize(width: 1, height: GameConfig.Metrics.polePairGap)
+        scoreZone.physicsBody = SKPhysicsBody(rectangleOf: size)
+        scoreZone.physicsBody?.isDynamic = false
+        scoreZone.physicsBody?.categoryBitMask = PhysicsCategory.scoreZone
+        scoreZone.physicsBody?.collisionBitMask = 0
+        scoreZone.physicsBody?.contactTestBitMask = PhysicsCategory.hero
+        return scoreZone
+    }
+    
+    private func spawnCollectiblePattern(at basePosition: CGPoint, pattern: CollectiblePattern, isBurger: Bool) {
+        let positions = pattern.getRelativePositions()
+        
+        for relativePos in positions {
+            let collectible = Collectable.shared.createCollectible(type: isBurger ? .burger : .coin)
+            let finalPos = CGPoint(
+                x: basePosition.x + relativePos.x,
+                y: basePosition.y + relativePos.y
+            )
+            collectible.position = finalPos
+            addChild(collectible)
+        }
+    }
+    
+    private func togglePause() {
+        isGamePaused = !isGamePaused
+        
+        if isGamePaused {
+            // Store current velocities
+            pauseButton.texture = SKTexture(imageNamed: "pause")
+            
+            // Pause all physics bodies
+            enumerateChildNodes(withName: "//") { node, _ in
+                if let body = node.physicsBody {
+                    body.velocity = .zero
+                    body.angularVelocity = 0
+                }
+            }
+            
+            // Stop all actions
+            hero.removeAllActions()
+            
+            // Set physics world gravity to zero
+            physicsWorld.gravity = .zero
+            
+            // Disable physics simulation
+            physicsWorld.speed = 0
+            
+        } else {
+            // Resume game
+            pauseButton.texture = SKTexture(imageNamed: "pause")
+            
+            // Restore physics world
+            physicsWorld.gravity = CGVector(dx: 0, dy: GameConfig.Physics.gravity)
+            physicsWorld.speed = 1.0
+            
+            // Re-apply hero physics
+            if let heroBody = hero.physicsBody {
+                heroBody.isDynamic = true
+                heroBody.allowsRotation = false
+                heroBody.categoryBitMask = PhysicsCategory.hero
+                heroBody.collisionBitMask = PhysicsCategory.pole | PhysicsCategory.floor
+                heroBody.contactTestBitMask = PhysicsCategory.pole | PhysicsCategory.coin | PhysicsCategory.burger | PhysicsCategory.scoreZone | PhysicsCategory.floor
+            }
+        }
+>>>>>>> 5f26c7d9dcd06e8213db7c6ca9258c4bab0667b5
     }
 }

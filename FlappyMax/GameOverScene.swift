@@ -62,6 +62,12 @@ class GameOverScene: SKScene {
         view.becomeFirstResponder()
         #endif
         
+        // Enable keyboard input
+        #if targetEnvironment(macCatalyst)
+        view.isUserInteractionEnabled = true
+        view.becomeFirstResponder()
+        #endif
+        
         // Check for high score if not skipped and score is not 0
         if !skipHighScoreCheck && mainScore > 0 {
             let isHighScore = leaderboardManager.scoreQualifiesForLeaderboard(mainScore)

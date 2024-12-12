@@ -48,6 +48,10 @@ enum DeviceType {
             return .iPhone
         } else {
             return .iPad
+        if maxDimension < 1024 {
+            return .iPhone
+        } else {
+            return .iPad
         }
     }
 }
@@ -92,11 +96,15 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.32
             case .iPad: return 0.32
+            case .iPhone: return 0.32
+            case .iPad: return 0.32
             }
         }
         
         static var pole: CGFloat {
             switch DeviceType.current {
+            case .iPhone: return 2.9
+            case .iPad: return 2.9
             case .iPhone: return 2.9
             case .iPad: return 2.9
             }
@@ -105,6 +113,7 @@ enum GameConfig {
         static var floor: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 4.0
+            case .iPad: return 4.8
             case .iPad: return 4.8
             }
         }
@@ -365,6 +374,8 @@ enum GameConfig {
     
     static var deviceScaleFactor: CGFloat {
         switch DeviceType.current {
+        case .iPhone: return 0.95
+        case .iPad: return 1.4
         case .iPhone: return 0.95
         case .iPad: return 1.4
         }
