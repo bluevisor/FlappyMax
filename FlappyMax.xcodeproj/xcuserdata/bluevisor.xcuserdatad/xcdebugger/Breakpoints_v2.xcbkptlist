@@ -30,10 +30,10 @@
             filePath = "FlappyMax/GameScene.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "233"
-            endingLineNumber = "233"
-            landmarkName = "canBecomeFirstResponder"
-            landmarkType = "24">
+            startingLineNumber = "213"
+            endingLineNumber = "213"
+            landmarkName = "playSoundEffect(_:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

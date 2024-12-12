@@ -19,8 +19,13 @@ class LeaderboardManager {
         let newEntry = ScoreEntry(name: name, mainScore: score, coinScore: coins, date: Date())
         leaderboard.append(newEntry)
         
-        // Sort by main score only (descending) and keep top 5
-        leaderboard.sort { $0.mainScore > $1.mainScore }
+        // Sort by main score (descending) and coins (descending) when scores are equal
+        leaderboard.sort { 
+            if $0.mainScore != $1.mainScore {
+                return $0.mainScore > $1.mainScore
+            }
+            return $0.coinScore > $1.coinScore
+        }
         if leaderboard.count > 5 {
             leaderboard = Array(leaderboard.prefix(5))
         }

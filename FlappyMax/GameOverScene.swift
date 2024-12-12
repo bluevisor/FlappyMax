@@ -109,7 +109,7 @@ class GameOverScene: SKScene {
         
         // Game Over Reason
         let reasonLabel = SKLabelNode(fontNamed: "Helvetica")
-        reasonLabel.text = gameOverReason == .collision ? "Crashed!" : "Out of Energy!"
+        reasonLabel.text = gameOverReason == .collision ? "Crashed!" : "Out of Stamina!"
         reasonLabel.fontSize = GameConfig.adaptiveFontSize(20)
         reasonLabel.position = CGPoint(x: 0, y: spacing * 2.6)
         contentNode.addChild(reasonLabel)
@@ -204,19 +204,19 @@ class GameOverScene: SKScene {
             contentNode.addChild(scoresNode)
         }
         
-        // Restart Button
+        // Restart and Menu Buttons
+        let yShift = spacing * 3.5
         let restartButton = SKLabelNode(fontNamed: "Helvetica")
         restartButton.text = "Restart"
-        restartButton.fontSize = GameConfig.adaptiveFontSize(24)
-        restartButton.position = CGPoint(x: 0, y: -spacing * 3)
+        restartButton.fontSize = GameConfig.adaptiveFontSize(28)
+        restartButton.position = CGPoint(x: -spacing * 2, y: -yShift)
         restartButton.name = "restartButton"
         contentNode.addChild(restartButton)
         
-        // Menu Button
         let menuButton = SKLabelNode(fontNamed: "Helvetica")
         menuButton.text = "Main Menu"
-        menuButton.fontSize = GameConfig.adaptiveFontSize(24)
-        menuButton.position = CGPoint(x: 0, y: -spacing * 4)
+        menuButton.fontSize = GameConfig.adaptiveFontSize(28)
+        menuButton.position = CGPoint(x: spacing * 2, y: -yShift)
         menuButton.name = "menuButton"
         contentNode.addChild(menuButton)
         
@@ -243,7 +243,7 @@ class GameOverScene: SKScene {
     
     #if targetEnvironment(macCatalyst)
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        #if !RELEASE
+        #if DEBUG
         print("\n=== Keyboard Event in GameOverScene ===")
         for press in presses {
             if let key = press.key {
@@ -255,7 +255,7 @@ class GameOverScene: SKScene {
         for press in presses {
             if let key = press.key {
                 if key.charactersIgnoringModifiers == "\r" {  // Enter key
-                    #if !RELEASE
+                    #if DEBUG
                     print("Enter pressed, restarting game")
                     #endif
                     let gameScene = GameScene(size: self.size)

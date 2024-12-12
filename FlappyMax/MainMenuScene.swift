@@ -41,8 +41,8 @@ class MainMenuScene: SKScene {
     var swooshSoundEffect: AVAudioPlayer?
 
     override func didMove(to view: SKView) {
-        #if !RELEASE
-        print("\n=== Device Configuration ===")
+        #if DEBUG
+        print("\n======== Device Configuration ========")
         print("- Current Device: \(DeviceType.current)")
         print("- Screen Size: \(UIScreen.main.bounds.size)")
         print("- Scale Factor: \(GameConfig.deviceScaleFactor)")
@@ -58,9 +58,9 @@ class MainMenuScene: SKScene {
         } else {
             safeAreaInsets = .zero
         }
-        #if !RELEASE
+        #if DEBUG
         print("- Safe Area Insets: \(safeAreaInsets)")
-        print("=========================\n")
+        print("=========================================\n")
         #endif
         
         // Create background first to avoid frame drops
@@ -74,11 +74,11 @@ class MainMenuScene: SKScene {
         let titleOutScale: CGFloat = ifIphone ? 0.6 : 0.75
         let titlePosition = CGPoint(x: frame.midX, y: frame.midY + titlePositionOffset)
         let versionLabelFontSize: CGFloat = ifIphone ? 16 : 20
-        let versionLabelPositionOffset: CGFloat = ifIphone ? -36 : -40
-        let startButtonPositionOffset: CGFloat = ifIphone ? -90 : -200
-        let settingsButtonPositionOffset: CGFloat = ifIphone ? -130 : -300
-        let startButtonFontSize: CGFloat = ifIphone ? 32 : 64
+        let versionLabelPositionOffset: CGFloat = ifIphone ? -34 : -40
+        let startButtonPositionOffset: CGFloat = ifIphone ? -87 : -185
+        let startButtonFontSize: CGFloat = ifIphone ? 38 : 72
         let settingsLabelFontSize: CGFloat = ifIphone ? 24 : 42
+        let settingsButtonPositionOffset: CGFloat = ifIphone ? -130 : -300
         let copyrightLabelFontSize: CGFloat = ifIphone ? 10 : 12
         
         // Create and cache textures

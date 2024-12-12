@@ -54,7 +54,16 @@ enum DeviceType {
 
 enum GameOverReason {
     case collision
-    case outOfEnergy
+    case outOfStamina
+    
+    var description: String {
+        switch self {
+        case .collision:
+            return "Collision!"
+        case .outOfStamina:
+            return "Out of Stamina!"
+        }
+    }
 }
 
 enum SpriteType {
@@ -62,6 +71,7 @@ enum SpriteType {
     case pole
     case floor
     case coin
+    case coinIcon
     case burger
     case label
     case custom(scale: CGFloat)
@@ -72,7 +82,7 @@ enum GameConfig {
     static let baseScreenWidth: CGFloat = 430
     static let baseScreenHeight: CGFloat = 932
     
-    static let globalGameScale: CGFloat = 1.0 // Adjust this as needed globally
+    static let globalGameScale: CGFloat = 1.0
 
     struct Scales {
         static var hero: CGFloat {
@@ -100,6 +110,13 @@ enum GameConfig {
             switch DeviceType.current {
             case .iPhone: return 0.42
             case .iPad: return 0.48
+            }
+        }
+        
+        static var coinIcon: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 0.3
+            case .iPad: return 0.3
             }
         }
         
@@ -131,24 +148,53 @@ enum GameConfig {
             }
         }
         
-        static var coinCounter: CGFloat {
-            switch DeviceType.current {
-            case .iPhone: return 0.5
-            case .iPad: return 0.7
-            }
-        }
-        
         static var highScoreCoin: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 0.4
             case .iPad: return 0.6
             }
         }
-        
-        static var coinIcon: CGFloat {
+    }
+
+    static var screenSize: CGSize {
+        let screen = UIScreen.main.bounds
+        return CGSize(width: screen.width, height: screen.height)
+    }
+
+    struct SafeMargin {
+        static var top: CGFloat {
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let safeAreaInset = scene?.windows.first?.safeAreaInsets.top ?? 0
             switch DeviceType.current {
-            case .iPhone: return 0.6
-            case .iPad: return 0.6
+            case .iPhone: return (safeAreaInset + 20)
+            case .iPad: return (safeAreaInset + 40)
+            }
+        }
+
+        static var bottom: CGFloat {
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let safeAreaInset = scene?.windows.first?.safeAreaInsets.bottom ?? 0
+            switch DeviceType.current {
+            case .iPhone: return (safeAreaInset + 20)
+            case .iPad: return (safeAreaInset + 40)
+            }
+        }
+
+        static var left: CGFloat {
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let safeAreaInset = scene?.windows.first?.safeAreaInsets.left ?? 0
+            switch DeviceType.current {
+            case .iPhone: return (safeAreaInset + 20)
+            case .iPad: return (safeAreaInset + 40)
+            }
+        }
+
+        static var right: CGFloat {
+            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+            let safeAreaInset = scene?.windows.first?.safeAreaInsets.right ?? 0
+            switch DeviceType.current {
+            case .iPhone: return (safeAreaInset + 20)
+            case .iPad: return (safeAreaInset + 40)
             }
         }
     }
@@ -162,6 +208,13 @@ enum GameConfig {
             )
         }
 
+        static var mainScoreLabelFontSize: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 48
+            case .iPad: return 72
+            }
+        }
+
         static var collectibleMinY: CGFloat {
             let floorHeight = GameConfig.Metrics.floorHeight
             let coinTexture = SKTexture(imageNamed: "coin_01.png")
@@ -172,21 +225,7 @@ enum GameConfig {
         static var collectibleMaxY: CGFloat {
             let coinTexture = SKTexture(imageNamed: "coin_01.png")
             let coinHeight = coinTexture.size().height * finalScale(for: .coin)
-            return screenSize.height - (coinHeight / 2) - topMargin
-        }
-
-        static var screenSize: CGSize {
-            let screen = UIScreen.main.bounds
-            return CGSize(width: screen.width, height: screen.height)
-        }
-
-        static var topMargin: CGFloat {
-            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
-            let safeAreaInset = scene?.windows.first?.safeAreaInsets.top ?? 0
-            switch DeviceType.current {
-            case .iPhone: return max(safeAreaInset + 20, screenSize.height * 0.1)
-            case .iPad: return max(safeAreaInset + 40, screenSize.height * 0.1)
-            }
+            return screenSize.height - (coinHeight / 2) - SafeMargin.top
         }
 
         static var bottomMargin: CGFloat {
@@ -202,12 +241,12 @@ enum GameConfig {
             }
         }
         
-        static let poleMargin: CGFloat = 50.0
+        static let poleSetVerticalMargin: CGFloat = poleWidth / 2
 
         static var poleSpacing: CGFloat {
             switch DeviceType.current {
             case .iPhone: return poleWidth * 7.5
-            case .iPad: return poleWidth * 6
+            case .iPad: return poleWidth * 6.5
             }
         }
         static let scoreZoneWidth: CGFloat = 10.0
@@ -241,12 +280,7 @@ enum GameConfig {
         }
 
         static var screenMargin: CGFloat {
-            let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene
-            let safeAreaInset = scene?.windows.first?.safeAreaInsets.left ?? 0
-            switch DeviceType.current {
-            case .iPhone: return max(safeAreaInset + 20, screenSize.width * 0.1)
-            case .iPad: return max(safeAreaInset + 40, screenSize.width * 0.08)
-            }
+            return SafeMargin.left
         }
 
         static let coinAnimationSpeed: TimeInterval = 1/30
@@ -257,6 +291,28 @@ enum GameConfig {
 
         static var maxRandomXPosition: CGFloat {
             return screenSize.width * 0.75
+        }
+
+        static var coinCounterIconWidth: CGFloat {
+            let coinTexture = SKTexture(imageNamed: "coin_12")
+            return coinTexture.size().width * finalScale(for: .coinIcon)
+        }
+
+        static var coinCounterIconHeight: CGFloat {
+            let coinTexture = SKTexture(imageNamed: "coin_12")
+            return coinTexture.size().height * finalScale(for: .coinIcon)
+        }
+
+        static var coinCounterLabelSize: CGFloat {
+            switch DeviceType.current {
+            case .iPhone: return 38.0
+            case .iPad: return 48.0
+            }
+        }
+
+        static var coinCounterSpacing: CGFloat {
+            let coinTexture = SKTexture(imageNamed: "coin_12")
+            return coinTexture.size().width * finalScale(for: .coinIcon)
         }
     }
 
@@ -271,7 +327,7 @@ enum GameConfig {
         static var flapImpulse: CGFloat {
             switch DeviceType.current {
             case .iPhone: return 92.0
-            case .iPad: return 142.0
+            case .iPad: return 132.0
             }
         }
 
@@ -299,10 +355,9 @@ enum GameConfig {
     }
     
     static func adaptiveSize(for texture: SKTexture, 
-                             baseScale: CGFloat = 1.0,
                              spriteType: SpriteType) -> CGSize {
         let defaultScale = getDefaultScale(for: spriteType)
-        let scaleFactor = globalGameScale * deviceScaleFactor * baseScale * defaultScale
+        let scaleFactor = globalGameScale * deviceScaleFactor * defaultScale
         return CGSize(
             width: texture.size().width * scaleFactor,
             height: texture.size().height * scaleFactor
@@ -319,6 +374,7 @@ enum GameConfig {
         case .pole: return Scales.pole
         case .floor: return Scales.floor
         case .coin: return Scales.coin
+        case .coinIcon: return Scales.coinIcon
         case .burger: return Scales.burger
         case .label: return Scales.label
         case .custom(let scale): return scale
