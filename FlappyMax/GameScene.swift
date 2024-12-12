@@ -261,27 +261,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             togglePause()
             return
         }
-        
+
         for node in touchedNodes {
             if node.name == "resumeButton" {
                 togglePause()
                 return
-            } else if node.name == "restartButton" {
-                restartGame()
-                return
-            } else if node.name == "gravityToggle" {
-                toggleGravity()
-                if let gravityToggle = childNode(withName: "//gravityToggle") as? SKLabelNode {
-                    gravityToggle.text = "Toggle Gravity: \(isGravityEnabled ? "ON" : "OFF")"
-                }
-                return
-            } else if node.name == "heroCollisionToggle" {
-                toggleHeroCollision()
-                if let heroCollisionToggle = childNode(withName: "//heroCollisionToggle") as? SKLabelNode {
-                    heroCollisionToggle.text = "Toggle Hero Collision: \(isHeroCollisionEnabled ? "ON" : "OFF")"
-                }
-                return
-            }
+            } 
         }
 
         // Only handle game input if not paused
@@ -354,6 +339,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupLabels()
         setupStaminaBar()
         setupPauseButton()
+        setupPauseManager()
 
         cleanupScene()
         
@@ -378,9 +364,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         uiLayer = SKNode()
         uiLayer.zPosition = 100 // Ensure UI is always on top
         addChild(uiLayer)
-        
-        // Initialize pause manager
-        pauseManager = PauseManager(scene: self, physicsWorld: physicsWorld)
     }
 
     private func setupLabels() {
@@ -486,6 +469,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Add to UI layer to prevent parallax effects
         uiLayer.addChild(pauseButton)
+    }
+
+    private func setupPauseManager() {
+        pauseManager = PauseManager(scene: self, physicsWorld: physicsWorld)
     }
 
     private func setupBackground() {
@@ -1325,6 +1312,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func updateHeroCollision() {
+
+        hero.physicsBody?.isDynamic = !isGamePaused
+        
         if let heroBody = hero.physicsBody {
             // Keep the hero's physics body dynamic and other properties unchanged
             heroBody.isDynamic = true
@@ -1355,13 +1345,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func togglePause() {
-        isGamePaused = !isGamePaused
-        pauseManager.togglePause(isGamePaused: isGamePaused, updateHeroCollision: updateHeroCollision)
-    }
-    
-    private func toggleGravity() {
-        isGravityEnabled.toggle()
-        physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
+        isGamePaused.toggle()
+        pauseManager.togglePause(isGamePaused: isGamePaused) { [weak self] in
+            self?.updateHeroCollision()
+        }
     }
     
     private func createPauseUI() {

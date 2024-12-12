@@ -105,10 +105,4 @@ class PauseManager {
             physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
         }
     }
-    
-    func toggleGravity() {
-        guard let physicsWorld = physicsWorld else { return }
-        isGravityEnabled.toggle()
-        physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
-    }
 }
