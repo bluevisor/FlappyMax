@@ -31,7 +31,7 @@ import GameplayKit
 
 class Pole {
     static let shared = Pole()
-    private var polePool: [SKNode] = []
+    var polePool: [SKNode] = []  // Changed to public for debug access
     
     private init() {}
     
