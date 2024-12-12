@@ -63,13 +63,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // DEBUG
     private var isGravityEnabled: Bool = true
     private var isHeroCollisionEnabled: Bool = true
+    private var hasRenderedFirstFrame: Bool = false
 
     // UI Container
     private var uiLayer: SKNode!
 
     // MARK: - Labels & Scores
     internal var mainScoreLabel: SKLabelNode!
-    internal var coinScoreLabel: SKLabelNode!
+    internal var coinCounterLabel: SKLabelNode!
     internal var mainScore = 0
     internal var coinScore = 0
     internal var burgerScore = 0
@@ -78,6 +79,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal var isGameOver = false
     private let leaderboardManager = LeaderboardManager.self
     private var poleSetCount = 0  // Track number of pole sets spawned
+    private var isGamePaused = false
+    private var pauseManager: PauseManager!
 
     // MARK: - Background Configuration
     internal let numberOfBackgrounds = 3
@@ -88,9 +91,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     // MARK: - Hero Configuration
     internal var hero: SKSpriteNode!
-    internal var stamina: CGFloat = 100.0
-    internal let staminaDepletion: CGFloat = 2.8
-    internal let staminaReplenishment: CGFloat = 25.0
 
     // MARK: - Floor Configuration
     internal var floorSpeed: CGFloat { GameConfig.Physics.gameSpeed * 1.3 }  // 20% faster than game speed
@@ -120,7 +120,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     internal var staminaBar: SKSpriteNode!
     internal let maxStamina: CGFloat = 100.0
     internal var currentStamina: CGFloat = 100.0
-    internal let staminaDecreaseRate: CGFloat = 2.0  // Points per second
+    internal let staminaDecreaseRate: CGFloat = 3.0  // Points per flap
     internal var staminaBarWidth: CGFloat = 200.0
     internal let staminaBarHeight: CGFloat = 20.0
     internal var staminaFill: SKSpriteNode!
@@ -157,7 +157,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 }
                 if !players.isEmpty {
                     audioPlayers[sound] = players
-                    #if !RELEASE
+                    #if DEBUG
                     print("Successfully cached \(players.count) players for: \(sound)")
                     #endif
                 }
@@ -165,7 +165,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 // Single player for other sounds
                 if let player = createAudioPlayer(for: sound) {
                     audioPlayers[sound] = player
-                    #if !RELEASE
+                    #if DEBUG
                     print("Successfully cached sound: \(sound)")
                     #endif
                 }
@@ -179,7 +179,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Try to get the URL for the sound file
         guard let url = Bundle.main.url(forResource: name, withExtension: fileExtension) else {
-            #if !RELEASE
+            #if DEBUG
             print("Could not find sound file: \(name).\(fileExtension)")
             #endif
             return nil
@@ -190,7 +190,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             player.prepareToPlay()
             return player
         } catch {
-            #if !RELEASE
+            #if DEBUG
             print("Could not create audio player for \(name): \(error)")
             #endif
             return nil
@@ -248,7 +248,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     #endif
 
     private var pauseButton: SKSpriteNode!
-    private var isGamePaused = false
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
@@ -268,8 +267,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 togglePause()
                 return
             } else if node.name == "restartButton" {
-                togglePause() // First unpause
-                restartGame() // Then restart
+                restartGame()
                 return
             } else if node.name == "gravityToggle" {
                 toggleGravity()
@@ -288,7 +286,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         // Only handle game input if not paused
         if !isGamePaused {
-            #if !RELEASE
+            #if DEBUG
             print("Calling flap()")
             #endif
             flap()
@@ -297,7 +295,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     #if targetEnvironment(macCatalyst)
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        #if !RELEASE
+        #if DEBUG
         print("\n=== Keyboard Event in GameScene ===")
         for press in presses {
             if let key = press.key {
@@ -315,7 +313,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             // Check for both space and return key
             if key.charactersIgnoringModifiers == " " || key.keyCode == 44 {  // Space key
-                #if !RELEASE
+                #if DEBUG
                 print("Space pressed, calling flap()")
                 #endif
                 flap()
@@ -338,12 +336,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         view.becomeFirstResponder()
         #endif
         
-        // Hide physics bodies
-        view.showsPhysics = true
-        
         // Log current volume and load sounds
         let currentVolume = UserDefaults.standard.float(forKey: "SFXVolume")
-        #if !RELEASE
+        #if DEBUG
         print("Current game volume: \(currentVolume * 100)%")
         #endif
         loadSoundEffects()
@@ -362,6 +357,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         cleanupScene()
         
+        setupPhysicsWorld()
         setupBackground()
         setupHero()
         setupFloor()
@@ -382,53 +378,82 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         uiLayer = SKNode()
         uiLayer.zPosition = 100 // Ensure UI is always on top
         addChild(uiLayer)
+        
+        // Initialize pause manager
+        pauseManager = PauseManager(scene: self, physicsWorld: physicsWorld)
     }
 
     private func setupLabels() {
         // Main Score Label
         mainScoreLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
         mainScoreLabel.text = "0"
-        mainScoreLabel.fontSize = GameConfig.adaptiveFontSize(48)
+        mainScoreLabel.fontSize = GameConfig.Metrics.mainScoreLabelFontSize
         mainScoreLabel.fontColor = .white
+        mainScoreLabel.verticalAlignmentMode = .top
         mainScoreLabel.position = CGPoint(
             x: frame.width / 2,
-            y: frame.height - GameConfig.Metrics.topMargin - mainScoreLabel.frame.height / 2
+            y: frame.height - GameConfig.SafeMargin.top
         )
         mainScoreLabel.zPosition = 100
         uiLayer.addChild(mainScoreLabel)
+        #if DEBUG
+        print("UI setup ---------------------------------------------")
+        print("UI setup - mainScoreLabel size: \(mainScoreLabel.frame.width) x \(mainScoreLabel.frame.height)")
+        print("UI setup - mainScoreLabel position: \(mainScoreLabel.position)")
+        print("UI setup ---------------------------------------------")
+        #endif
 
         // Coin counter
         let coinAtlas = SKTextureAtlas(named: "coin")
         let coinTexture = coinAtlas.textureNamed("coin_12")
         coinTexture.filteringMode = .nearest
-        let coinSprite = SKSpriteNode(texture: coinTexture)
         
-        let coinSize = GameConfig.adaptiveSize(
-            for: coinTexture,
-            baseScale: GameConfig.Scales.coinIcon,
-            spriteType: .coin
-        )
-        coinSprite.size = coinSize
-
-        coinScoreLabel = SKLabelNode(fontNamed: "Helvetica")
-        coinScoreLabel.fontSize = GameConfig.adaptiveFontSize(24)
-        coinScoreLabel.fontColor = .white
-        coinScoreLabel.text = "0"
-        coinScoreLabel.zPosition = 100
-
+        // Create container node for counter
         let coinCounterNode = SKNode()
-        coinCounterNode.position = CGPoint(x: frame.maxX - GameConfig.scaled(20), y: frame.maxY - GameConfig.scaled(30))
+        coinCounterNode.position = CGPoint(
+            x: frame.maxX - GameConfig.SafeMargin.right,
+            y: frame.maxY - GameConfig.SafeMargin.top - GameConfig.Metrics.coinCounterIconHeight/2
+        )
         coinCounterNode.zPosition = 100
+
+        // Create coin counter label first to get its size
+        coinCounterLabel = SKLabelNode(fontNamed: "Helvetica")
+        coinCounterLabel.fontSize = GameConfig.Metrics.coinCounterLabelSize
+        coinCounterLabel.fontColor = .white
+        coinCounterLabel.text = "0"
+        coinCounterLabel.horizontalAlignmentMode = .right
+        coinCounterLabel.verticalAlignmentMode = .center
+        coinCounterLabel.zPosition = 100
         
-        coinSprite.position = CGPoint(x: -coinSize.width - GameConfig.scaled(15), y: -1)
-        coinCounterNode.addChild(coinSprite)
+        // Create coin counter icon
+        let coinCounterIcon = SKSpriteNode(texture: coinTexture)
+        coinCounterIcon.size = CGSize(
+            width: GameConfig.Metrics.coinCounterIconWidth,
+            height: GameConfig.Metrics.coinCounterIconHeight
+        )
+        coinCounterIcon.anchorPoint = CGPoint(x: 1, y: 0.5)
+        coinCounterIcon.zPosition = 100
+
+        // Position label at origin (right-aligned)
+        coinCounterLabel.position = CGPoint(x: 0, y: 0)
+        coinCounterNode.addChild(coinCounterLabel)
         
-        coinScoreLabel.position = CGPoint(x: 0, y: 0)
-        coinScoreLabel.horizontalAlignmentMode = .right
-        coinScoreLabel.verticalAlignmentMode = .center
-        coinCounterNode.addChild(coinScoreLabel)
+        // Position icon to the left of the label
+        coinCounterIcon.position = CGPoint(
+            x: -GameConfig.Metrics.coinCounterSpacing,
+            y: 0
+        )
+        coinCounterNode.addChild(coinCounterIcon)
         
         addChild(coinCounterNode)
+
+        #if DEBUG
+        print("UI setup ---------------------------------------------")
+        print("UI setup - coinCounterLabel size: \(coinCounterLabel.frame.width) x \(coinCounterLabel.frame.height)")
+        print("UI setup - coinCounterIcon size: \(coinCounterIcon.size)")
+        print("UI setup - coinCounterNode position: \(coinCounterNode.position)")
+        print("UI setup ---------------------------------------------")
+        #endif
     }
 
     private func setupStaminaBar() {
@@ -437,7 +462,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         staminaBar = SKSpriteNode(color: .gray, size: CGSize(width: barWidth, height: barHeight))
         staminaBar.anchorPoint = CGPoint(x: 0, y: 0.5)  // Left center anchor
-        staminaBar.position = CGPoint(x: frame.minX + GameConfig.scaled(20), y: frame.maxY - GameConfig.scaled(30))
+        staminaBar.position = CGPoint(x: frame.minX + GameConfig.SafeMargin.left, y: frame.maxY - GameConfig.SafeMargin.top - barHeight/2)
         staminaBar.zPosition = 100
         addChild(staminaBar)
         
@@ -454,10 +479,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseButton.setScale(0.25)
         
         // Position in bottom left corner with padding
-        let padding: CGFloat = 20.0
         pauseButton.position = CGPoint(
-            x: pauseButton.size.width/2 + padding,
-            y: pauseButton.size.height/2 + padding
+            x: pauseButton.size.width/2 + GameConfig.SafeMargin.left,
+            y: pauseButton.size.height/2 + GameConfig.SafeMargin.bottom
         )
         
         // Add to UI layer to prevent parallax effects
@@ -522,13 +546,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let path = UIBezierPath()
         let width = node.size.width
         let height = node.size.height
-        let mountainHeight = large ? height * 0.3 : height * 0.2
+        let mountainHeight = large ? height * 0.25 : height * 0.15
         
         path.move(to: CGPoint(x: 0, y: 0))
         
         var x: CGFloat = 0
         while x < width {
-            let mountainWidth = large ? CGFloat.random(in: 100...200) : CGFloat.random(in: 60...120)
+            let mountainWidth = large ? CGFloat.random(in: 150...300) : CGFloat.random(in: 80...160)
             let peakHeight = CGFloat.random(in: mountainHeight/2...mountainHeight)
             
             path.addLine(to: CGPoint(x: x + mountainWidth/2, y: peakHeight))
@@ -575,11 +599,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let initialY = frame.height * 0.6
         hero.position = CGPoint(x: initialX, y: initialY)
         
-        #if !RELEASE
+        #if DEBUG
         print("Hero setup - Initial position: (\(initialX), \(initialY))")
-        print("Hero setup - Frame dimensions: \(frame.width) x \(frame.height)")
         print("Hero setup - Hero size: \(hero.size)")
-        print("Hero setup - Floor height: \(GameConfig.Metrics.floorHeight)")
+        print("Scene setup - Frame dimensions: \(frame.width) x \(frame.height)")
+        print("Scene setup - Floor height: \(GameConfig.Metrics.floorHeight)")
+        print("Scene setup - Pole width: \(GameConfig.Metrics.poleWidth), pole spacing: \(GameConfig.Metrics.poleSpacing)")
         #endif
         
         hero.zPosition = 3
@@ -599,8 +624,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Enable physics after a short delay
         let enablePhysicsAction = SKAction.run { [self] in
+            #if DEBUG
             self.hero.physicsBody?.isDynamic = true
-            #if !RELEASE
             print("Hero physics enabled - Current position: \(String(describing: self.hero.position))")
             #endif
         }
@@ -618,8 +643,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let floorSize = GameConfig.adaptiveSize(for: floorTexture, spriteType: .floor)
         let numberOfFloors = Int(ceil(frame.width / floorSize.width)) + 2
         
-        #if !RELEASE
-        print("Floor setup - Frame height: \(frame.height), Floor height: \(GameConfig.Metrics.floorHeight)")
+        #if DEBUG
+        print("Scene setup - Frame height: \(frame.height), Floor height: \(GameConfig.Metrics.floorHeight)")
         #endif
         
         floorNodes = []  // Clear any existing floor nodes
@@ -636,7 +661,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 x: floorSize.width * CGFloat(i),
                 y: floorY
             )
-            #if !RELEASE
+            #if DEBUG
             print("Floor \(i) position - X: \(floor.position.x), Y: \(floor.position.y)")
             #endif
             
@@ -674,7 +699,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func spawnPoleSet() {
         if let poleSet = Pole.shared.getPooledPoleSet() {
             let xPos = poleNodes.isEmpty ? 
-                frame.width + poleSet.frame.width : // First pole starts just off screen
+                frame.width + 42 : // First pole starts further off screen to account for initial movement
                 poleNodes.last!.position.x + poleSpacing // Use consistent pole spacing
             
             #if DEBUG
@@ -726,9 +751,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         #endif
         
         let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
-        let margin = GameConfig.scaled(GameConfig.Metrics.poleMargin)
-        let minY = gap/2 + margin + GameConfig.Metrics.floorHeight
-        let maxY = frame.height - gap/2 - margin
+        let minY = gap/2 + GameConfig.Metrics.poleSetVerticalMargin + GameConfig.Metrics.floorHeight
+        let maxY = frame.height - gap/2 - GameConfig.Metrics.poleSetVerticalMargin
         
         // Generate random Y position within safe bounds
         let yPos = CGFloat.random(in: minY...maxY)
@@ -839,7 +863,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     #if targetEnvironment(macCatalyst)
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        #if !RELEASE
+        #if DEBUG
         print("\n=== Keyboard Event ===")
         for press in presses {
             if let key = press.key {
@@ -850,7 +874,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         #endif
         
         guard !isGameOver else {
-            #if !RELEASE
+            #if DEBUG
             print("Game is over, restarting...")
             #endif
             restartGame()
@@ -859,7 +883,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         for press in presses {
             if let key = press.key, key.charactersIgnoringModifiers == " " {
-                #if !RELEASE
+                #if DEBUG
                 print("Spacebar pressed, calling flap()")
                 #endif
                 flap()
@@ -877,7 +901,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if currentStamina > 0 {
             hero.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
             hero.physicsBody?.applyImpulse(CGVector(dx: 0, dy: flapImpulse))
-            currentStamina -= staminaDepletion
+            currentStamina -= staminaDecreaseRate
             updateStaminaBar()
             _ = playSoundEffect("flap")
         }
@@ -888,7 +912,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     private func updateStaminaBar() {
         let staminaRatio = max(0, currentStamina / maxStamina)
         staminaFill.size.width = staminaBar.size.width * staminaRatio
-        staminaFill.color = staminaRatio > 0.2 ? .green : .yellow
+        
+        // Update color based on stamina level
+        if staminaRatio <= 0.2 {
+            staminaFill.color = .red
+        } else if staminaRatio <= 0.5 {
+            staminaFill.color = .yellow
+        } else {
+            staminaFill.color = .green
+        }
+        
+        // Game over if stamina is depleted
+        if staminaRatio <= 0 {
+            gameOver(reason: .outOfStamina)
+        }
     }
 
     // MARK: - Collision Handling
@@ -939,11 +976,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         switch type {
         case .coin:
             coinScore += 1
-            coinScoreLabel.text = "\(coinScore)"
+            coinCounterLabel.text = "\(coinScore)"
             _ = playSoundEffect("coin")
         case .burger:
             burgerScore += 1
-            stamina = 100.0  // Full stamina restoration
+            currentStamina = 100.0  // Full stamina restoration
             updateStaminaBar()
             _ = playSoundEffect("burger")
         }
@@ -973,9 +1010,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     private func getNextPolePosition() -> CGPoint {
         let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
-        let margin = GameConfig.scaled(GameConfig.Metrics.poleMargin)
-        let minY = gap/2 + margin + GameConfig.Metrics.floorHeight
-        let maxY = frame.height - gap/2 - margin
+        let minY = gap/2 + GameConfig.Metrics.poleSetVerticalMargin + GameConfig.Metrics.floorHeight
+        let maxY = frame.height - gap/2 - GameConfig.Metrics.poleSetVerticalMargin
         
         // Generate random Y position within safe bounds
         let yPos = CGFloat.random(in: minY...maxY)
@@ -1116,18 +1152,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Calculate delta time
         if lastUpdateTime == 0 {
             lastUpdateTime = currentTime
+            return  // Skip first frame to ensure proper initialization
         }
-        let deltaTime = currentTime - lastUpdateTime
+        
+        if !hasRenderedFirstFrame {
+            hasRenderedFirstFrame = true
+            return  // Skip movement on first frame render
+        }
+        
+        let deltaTime = min(currentTime - lastUpdateTime, 1.0/30.0) // Cap delta time to prevent large jumps
         lastUpdateTime = currentTime
         
         // Move game objects
         moveGameObjects(deltaTime: deltaTime)
-        
-        // Update stamina
-        if currentStamina < maxStamina {
-            currentStamina = min(maxStamina, currentStamina + (staminaReplenishment * CGFloat(deltaTime)))
-            updateStaminaBar()
-        }
     }
     
     // MARK: - Game Over
@@ -1162,32 +1199,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     // MARK: - Reset Game
     private func restartGame() {
-        #if !RELEASE
+        #if DEBUG
         print("Restarting game...")
         #endif
         
-        // Clean up the scene
-        cleanupScene()
-        
-        // Reset hero position
-        hero.position = CGPoint(x: frame.width * 0.3, y: frame.height * 0.5)
-        hero.zRotation = 0
-        hero.physicsBody?.velocity = .zero
-        
-        // Reset game state
+        // Reset all game state
         isGameOver = false
+        isGamePaused = false
         currentStamina = maxStamina
+        poleSetCount = 0
+        mainScore = 0
+        coinScore = 0
+        burgerScore = 0
+        lastUpdateTime = 0
         
-        // Update UI
-        updateStaminaBar()
+        // Reset physics world
+        physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
+        physicsWorld.speed = 1
+        physicsWorld.contactDelegate = self
+        self.speed = 1
         
-        #if !RELEASE
-        print("Game restarted")
-        #endif
-    }
-    
-    private func cleanupScene() {
-        // Remove and recycle all collectibles
+        // Remove all nodes except permanent UI
+        self.children.forEach { node in
+            if node !== uiLayer {  // Keep UI layer
+                node.removeFromParent()
+            }
+        }
+        
+        // Recycle all objects to pools
+        poleNodes.forEach { Pole.shared.recyclePoleSet($0) }
+        poleNodes.removeAll()
+        
         self.children.forEach { node in
             if let collectible = node as? SKSpriteNode {
                 if collectible.name == "coin" || collectible.name == "burger" {
@@ -1196,20 +1238,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         
-        // Reset scores and other game state
-        mainScore = 0
-        coinScore = 0
-        currentStamina = maxStamina
-        isGameOver = false
+        // Remove pause UI if present
+        if let container = childNode(withName: "pauseContainer") {
+            container.removeFromParent()
+        }
         
-        // Update UI
+        // Reset UI
         mainScoreLabel.text = "0"
-        coinScoreLabel.text = "0"
+        coinCounterLabel.text = "0"
         updateStaminaBar()
         
-        #if !RELEASE
-        print("Scene cleaned up")
+        // Re-setup game elements in the same order as didMove(to:)
+        setupPhysicsWorld()
+        setupBackground()
+        setupFloor()
+        setupHero()
+        setupPools()  // This will spawn initial poles
+        
+        #if DEBUG
+        print("Game restarted")
         #endif
+    }
+    
+    private func setupPhysicsWorld() {
+        physicsWorld.gravity = CGVector(dx: 0, dy: GameConfig.Physics.gravity)
+        physicsWorld.contactDelegate = self
     }
     
     // MARK: - Node Tracking
@@ -1303,33 +1356,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     private func togglePause() {
         isGamePaused = !isGamePaused
-        
-        if isGamePaused {
-            // Pause the game by setting speeds to 0
-            self.physicsWorld.speed = 0
-            self.speed = 0
-            
-            // Create pause UI
-            createPauseUI()
-        } else {
-            // Reset the last update time to prevent large delta on resume
-            lastUpdateTime = 0
-            
-            // Resume the game by restoring speeds to 1
-            self.physicsWorld.speed = 1
-            self.speed = 1
-            
-            // Remove pause UI
-            if let container = childNode(withName: "pauseContainer") {
-                container.removeFromParent()
-            }
-            
-            // Update physics state based on current toggle settings
-            updateHeroCollision()
-            physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
-        }
+        pauseManager.togglePause(isGamePaused: isGamePaused, updateHeroCollision: updateHeroCollision)
     }
-
+    
+    private func toggleGravity() {
+        isGravityEnabled.toggle()
+        physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
+    }
+    
     private func createPauseUI() {
         // Create a container node for all pause UI elements
         let pauseContainer = SKNode()
@@ -1339,7 +1373,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Paused Label 
         let pausedLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
         pausedLabel.text = "Paused"
-        pausedLabel.position = CGPoint(x: frame.midX, y: frame.midY + 200)
+        pausedLabel.position = CGPoint(x: frame.midX, y: frame.maxY * 0.75)
         pausedLabel.fontSize = 40
         pausedLabel.fontColor = .white
         pausedLabel.name = "pausedLabel"
@@ -1375,7 +1409,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         heroCollisionToggle.name = "heroCollisionToggle"
         pauseContainer.addChild(heroCollisionToggle)
         
-        #if !RELEASE
+        #if DEBUG
         // Debug Information
         let debugInfo = SKNode()
         debugInfo.position = CGPoint(x: frame.midX, y: frame.midY + 100)
@@ -1421,8 +1455,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(pauseContainer)
     }
     
-    private func toggleGravity() {
-        isGravityEnabled.toggle()
-        physicsWorld.gravity = isGravityEnabled ? CGVector(dx: 0, dy: GameConfig.Physics.gravity) : .zero
+    private func cleanupScene() {
+        // Remove and recycle all collectibles
+        self.children.forEach { node in
+            if let collectible = node as? SKSpriteNode {
+                if collectible.name == "coin" || collectible.name == "burger" {
+                    Collectable.shared.recycleCollectible(collectible)
+                }
+            }
+        }
+        
+        // Reset scores and other game state
+        mainScore = 0
+        coinScore = 0
+        burgerScore = 0
+        currentStamina = maxStamina
+        isGameOver = false
+        
+        // Update UI
+        mainScoreLabel.text = "0"
+        coinCounterLabel.text = "0"
+        updateStaminaBar()
+        
+        #if DEBUG
+        print("Scene cleaned up")
+        #endif
     }
 }
