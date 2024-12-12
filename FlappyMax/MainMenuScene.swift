@@ -37,31 +37,34 @@ import UIKit
 
 class MainMenuScene: SKScene {
 
+    private static var hasLoggedDeviceConfig = false
     var audioPlayer: AVAudioPlayer?
     var swooshSoundEffect: AVAudioPlayer?
 
     override func didMove(to view: SKView) {
         #if DEBUG
-        print("\n======== Device Configuration ========")
-        print("- Current Device: \(DeviceType.current)")
-        print("- Screen Size: \(UIScreen.main.bounds.size)")
-        print("- Scale Factor: \(GameConfig.deviceScaleFactor)")
+        if !MainMenuScene.hasLoggedDeviceConfig {
+            print("\n======== Device Configuration ========")
+            print("- Current Device: \(DeviceType.current)")
+            print("- Screen Size: \(UIScreen.main.bounds.size)")
+            print("- Scale Factor: \(GameConfig.deviceScaleFactor)")
+            
+            // Get safe area insets using the modern API
+            let safeAreaInsets: UIEdgeInsets
+            if let windowScene = view.window?.windowScene {
+                safeAreaInsets = windowScene.windows.first?.safeAreaInsets ?? .zero
+            } else {
+                safeAreaInsets = .zero
+            }
+            
+            print("- Safe Area Insets: \(safeAreaInsets)")
+            print("=========================================\n")
+            MainMenuScene.hasLoggedDeviceConfig = true
+        }
         #endif
         
         // Setup audio first
         preloadAudio()
-        
-        // Get safe area insets using the modern API
-        let safeAreaInsets: UIEdgeInsets
-        if let windowScene = view.window?.windowScene {
-            safeAreaInsets = windowScene.windows.first?.safeAreaInsets ?? .zero
-        } else {
-            safeAreaInsets = .zero
-        }
-        #if DEBUG
-        print("- Safe Area Insets: \(safeAreaInsets)")
-        print("=========================================\n")
-        #endif
         
         // Create background first to avoid frame drops
         let background = BackgroundManager.shared.createBackground(size: self.size)

@@ -40,6 +40,30 @@ class PauseManager {
         // Calculate vertical spacing for middle content
         let middleY = scene.frame.midY
         
+        // Define score multiplier labels in a fixed order
+        let scoreMultiplierLabels = ["100": "🍔", "50": "🍕", "25": "🍣", "10": "🍟"]
+
+        // Specify the fixed order for the keys
+        let fixedOrder = ["10", "25", "50", "100"]
+
+        // Map the labels into the fixed order
+        let orderedLabels = fixedOrder.map { key -> String in
+            if let symbol = scoreMultiplierLabels[key] {
+                return "\(symbol) = \(key)"
+            } else {
+                return ""
+            }
+        }.filter { !$0.isEmpty } // Remove any empty entries (in case of missing keys)
+
+        // Combine the labels into a single string
+        let label = SKLabelNode(fontNamed: "Helvetica")
+        label.text = orderedLabels.joined(separator: "    ")
+        label.fontSize = DeviceType.current == .iPhone ? 32 : 48
+        label.fontColor = .white
+        label.position = CGPoint(x: scene.frame.midX, y: middleY - vSpacing)
+        pauseContainer.addChild(label)
+
+
         #if DEBUG
         // Debug Info (in the middle)
         let debugInfo = SKNode()
