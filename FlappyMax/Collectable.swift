@@ -37,12 +37,12 @@ enum CollectibleType {
 
 class Collectable {
     static let shared = Collectable()
-    private var coinPool: [SKSpriteNode] = []
-    private var burgerPool: [SKSpriteNode] = []
     
-    // Tracking arrays for active collectibles
-    private(set) var activeCoins: [SKSpriteNode] = []
-    private(set) var activeBurgers: [SKSpriteNode] = []
+    // Make pools public for debug access
+    var coinPool: [SKSpriteNode] = []
+    var burgerPool: [SKSpriteNode] = []
+    var activeCoins: [SKSpriteNode] = []
+    var activeBurgers: [SKSpriteNode] = []
     
     // Key for associated object to store collected state
     private let collectedKey = "CollectableCollectedState"
