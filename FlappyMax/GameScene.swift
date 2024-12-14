@@ -51,15 +51,15 @@ import AVFoundation
 
 // MARK: - Physics Categories
 struct PhysicsCategory {
-    static let hero: UInt32 = 0x1 << 0
-    static let pole: UInt32 = 0x1 << 1
-    static let coin: UInt32 = 0x1 << 2
-    static let burger: UInt32 = 0x1 << 3
-    static let pizza: UInt32 = 0x1 << 4
-    static let sushi: UInt32 = 0x1 << 5
-    static let fries: UInt32 = 0x1 << 6
-    static let scoreZone: UInt32 = 0x1 << 7
-    static let floor: UInt32 = 0x1 << 8
+    static let hero: UInt32 = 0x1 << 0    // 1
+    static let pole: UInt32 = 0x1 << 1    // 2
+    static let coin: UInt32 = 0x1 << 2    // 4
+    static let burger: UInt32 = 0x1 << 3  // 8
+    static let pizza: UInt32 = 0x1 << 4   // 16
+    static let sushi: UInt32 = 0x1 << 5   // 32
+    static let fries: UInt32 = 0x1 << 6   // 64
+    static let scoreZone: UInt32 = 0x1 << 7 // 128
+    static let floor: UInt32 = 0x1 << 8   // 256
 }
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
@@ -138,6 +138,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func loadSoundEffects() {
+        #if DEBUG
+        print("[GameScene] - loadSoundEffects() is loading sound effects")
+        #endif
         // Pre-load and prepare all sound effects
         let sounds = [
             "flap",         // flap.m4a
@@ -150,7 +153,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ]
         
         for sound in sounds {
-            if sound == "coin" || sound == "burger" {
+            if sound == "coin" || sound == "burger" || sound == "flap" {
                 // Create multiple players for collectible sounds
                 var players: [AVAudioPlayer] = []
                 for _ in 0..<maxCollectibleSounds {
@@ -161,7 +164,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 if !players.isEmpty {
                     audioPlayers[sound] = players
                     #if DEBUG
-                    print("Successfully cached \(players.count) players for: \(sound)")
+                    print("[GameScene] - Successfully cached \(players.count) players for: \(sound)")
                     #endif
                 }
             } else {
@@ -169,7 +172,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 if let player = createAudioPlayer(for: sound) {
                     audioPlayers[sound] = player
                     #if DEBUG
-                    print("Successfully cached sound: \(sound)")
+                    print("[GameScene] - Successfully cached sound: \(sound)")
                     #endif
                 }
             }
@@ -183,7 +186,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Try to get the URL for the sound file
         guard let url = Bundle.main.url(forResource: name, withExtension: fileExtension) else {
             #if DEBUG
-            print("Could not find sound file: \(name).\(fileExtension)")
+            print("[GameScene] - Could not find sound file: \(name).\(fileExtension)")
             #endif
             return nil
         }
@@ -194,14 +197,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return player
         } catch {
             #if !RELEASE
-            print("Could not create audio player for \(name): \(error)")
+            print("[GameScene] - Could not create audio player for \(name): \(error)")
             #endif
             return nil
         }
     }
     
     private func playSoundEffect(_ name: String) -> AVAudioPlayer? {
-        if name == "coin" || name == "burger" {
+        if name == "coin" || name == "burger" || name == "flap" {
             // Handle collectible sounds with multiple players
             if let players = audioPlayers[name] as? [AVAudioPlayer] {
                 // Try to find a player that's not currently playing
@@ -275,7 +278,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Only handle game input if not paused
         if !isGamePaused {
             #if DEBUG
-            print("Calling flap()")
+            print("[GameScene] - Calling flap()")
             #endif
             flap()
         }
@@ -284,14 +287,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     #if targetEnvironment(macCatalyst)
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         #if DEBUG
-        print("\n=== Keyboard Event in GameScene ===")
         for press in presses {
             if let key = press.key {
-                print("Key pressed: \(key.charactersIgnoringModifiers ?? "")")
-                print("Key code: \(key.keyCode)")
+                print("[GameScene] - Key pressed: \(key.charactersIgnoringModifiers ?? "")")
+                print("[GameScene] - Key code: \(key.keyCode)")
             }
         }
-        print("Game over state: \(isGameOver)")
+        print("[GameScene] - Game over state: \(isGameOver)")
         #endif
         
         if isGameOver { return }  // Let GameOverScene handle restart
@@ -302,7 +304,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Check for both space and return key
             if key.charactersIgnoringModifiers == " " || key.keyCode == 44 {  // Space key
                 #if DEBUG
-                print("Space pressed, calling flap()")
+                print("[GameScene] - Space pressed, calling flap()")
                 #endif
                 flap()
                 return
@@ -327,7 +329,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Log current volume and load sounds
         let currentVolume = UserDefaults.standard.float(forKey: "SFXVolume")
         #if DEBUG
-        print("Current game volume: \(currentVolume * 100)%")
+        print("[GameScene] - Current game volume: \(currentVolume * 100)%")
         #endif
         loadSoundEffects()
         
@@ -358,9 +360,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Reset current index
         currentIndex = 0
-        
-        // Initialize hero collision state
-        updateHeroCollision()
     }
 
     private func setupUILayer() {
@@ -383,10 +382,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         mainScoreLabel.zPosition = 100
         uiLayer.addChild(mainScoreLabel)
         #if DEBUG
-        print("UI setup ---------------------------------------------")
-        print("UI setup - mainScoreLabel size: \(mainScoreLabel.frame.width) x \(mainScoreLabel.frame.height)")
-        print("UI setup - mainScoreLabel position: \(mainScoreLabel.position)")
-        print("UI setup ---------------------------------------------")
+        print("[GameScene] UI setup ---------------------------------------------")
+        print("[GameScene] UI setup - mainScoreLabel size: \(mainScoreLabel.frame.width) x \(mainScoreLabel.frame.height)")
+        print("[GameScene] UI setup - mainScoreLabel position: \(mainScoreLabel.position)")
+        print("[GameScene] UI setup ---------------------------------------------")
         #endif
 
         // Coin counter
@@ -434,11 +433,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         addChild(coinCounterNode)
 
         #if DEBUG
-        print("UI setup ---------------------------------------------")
-        print("UI setup - coinCounterLabel size: \(coinCounterLabel.frame.width) x \(coinCounterLabel.frame.height)")
-        print("UI setup - coinCounterIcon size: \(coinCounterIcon.size)")
-        print("UI setup - coinCounterNode position: \(coinCounterNode.position)")
-        print("UI setup ---------------------------------------------")
+        print("[GameScene] UI setup ---------------------------------------------")
+        print("[GameScene] UI setup - coinCounterLabel size: \(coinCounterLabel.frame.width) x \(coinCounterLabel.frame.height)")
+        print("[GameScene] UI setup - coinCounterIcon size: \(coinCounterIcon.size)")
+        print("[GameScene] UI setup - coinCounterNode position: \(coinCounterNode.position)")
+        print("[GameScene] UI setup ---------------------------------------------")
         #endif
     }
 
@@ -590,11 +589,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         hero.position = CGPoint(x: initialX, y: initialY)
         
         #if DEBUG
-        print("Hero setup - Initial position: (\(initialX), \(initialY))")
-        print("Hero setup - Hero size: \(hero.size)")
-        print("Scene setup - Frame dimensions: \(frame.width) x \(frame.height)")
-        print("Scene setup - Floor height: \(GameConfig.Metrics.floorHeight)")
-        print("Scene setup - Pole width: \(GameConfig.Metrics.poleWidth), pole spacing: \(GameConfig.Metrics.poleSpacing)")
+        print("[GameScene] Hero setup - Initial position: (\(initialX), \(initialY))")
+        print("[GameScene] Hero setup - Hero size: \(hero.size)")
+        print("[GameScene] Scene setup - Frame dimensions: \(frame.width) x \(frame.height)")
+        print("[GameScene] Scene setup - Floor height: \(GameConfig.Metrics.floorHeight)")
+        print("[GameScene] Scene setup - Pole width: \(GameConfig.Metrics.poleWidth), pole spacing: \(GameConfig.Metrics.poleSpacing)")
         #endif
         
         hero.zPosition = 3
@@ -619,12 +618,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let enablePhysicsAction = SKAction.run { [self] in
             self.hero.physicsBody?.isDynamic = true
             #if DEBUG
-            print("Hero physics enabled - Current position: \(String(describing: self.hero.position))")
+            print("[GameScene] Hero physics enabled - Current position: \(String(describing: self.hero.position))")
             #endif
         }
         
         hero.run(SKAction.sequence([
-            SKAction.wait(forDuration: 10/30),
+            SKAction.wait(forDuration: 2/30),
             enablePhysicsAction
         ]))
     }
@@ -637,7 +636,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let numberOfFloors = Int(ceil(frame.width / floorSize.width)) + 2
         
         #if DEBUG
-        print("Scene setup - Frame height: \(frame.height), Floor height: \(GameConfig.Metrics.floorHeight)")
+        print("[GameScene] Scene setup - Frame height: \(frame.height), Floor height: \(GameConfig.Metrics.floorHeight)")
         #endif
         
         floorNodes = []  // Clear any existing floor nodes
@@ -655,7 +654,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 y: floorY
             )
             #if DEBUG
-            print("Floor \(i) position - X: \(floor.position.x), Y: \(floor.position.y)")
+            print("[GameScene] Floor \(i) position - X: \(floor.position.x), Y: \(floor.position.y)")
             #endif
             
             floor.zPosition = 2
@@ -696,9 +695,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 poleNodes.last!.position.x + poleSpacing
             
             #if DEBUG
-            print("🚀 Spawning pole set - isEmpty: \(poleNodes.isEmpty), xPos: \(xPos)")
+            print("[GameScene] 🟩 Spawning pole set - isEmpty: \(poleNodes.isEmpty), xPos: \(xPos)")
             if !poleNodes.isEmpty {
-                print("🚀 Last pole position: \(poleNodes.last!.position.x), spacing: \(poleSpacing)")
+                print("[GameScene] 🟩 Last pole position: \(poleNodes.last!.position.x), spacing: \(poleSpacing)")
             }
             #endif
                 
@@ -720,22 +719,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Spawn food every 5 poles with equal probability
             else if poleSetCount % 5 == 0 {
                 #if DEBUG
-                print("🍽️ Food spawn at pole set: \(poleSetCount)")
+                print("[GameScene] 🍱 Spawning Food")
                 #endif
                 let foodTypes: [CollectibleType] = [.burger, .sushi, .pizza, .fries]
                 let randomFood = foodTypes[Int.random(in: 0..<foodTypes.count)]
                 #if DEBUG
-                print("🍴 Selected food type: \(randomFood)")
+                print("[GameScene] 🍱 Selected food type: \(randomFood)")
                 #endif
                 spawnCollectiblePattern(at: CGPoint(x: collectibleX, y: centerY), pattern: .single, collectibleType: randomFood)
                 
                 // Log available food in pools
                 #if DEBUG
-                print("📦 Pool status:")
-                print("  🍔 Burgers in pool: \(Collectable.shared.burgerPool.count)")
-                print("  🍣 Sushi in pool: \(Collectable.shared.sushiPool.count)")
-                print("  🍕 Pizzas in pool: \(Collectable.shared.pizzaPool.count)")
-                print("  🍟 Fries in pool: \(Collectable.shared.friesPool.count)")
+                print("[GameScene] 🟦 Pool status:")
+                print("[GameScene]   🍔 Burgers in pool: \(Collectable.shared.burgerPool.count)")
+                print("[GameScene]   🍣 Sushi in pool: \(Collectable.shared.sushiPool.count)")
+                print("[GameScene]   🍕 Pizzas in pool: \(Collectable.shared.pizzaPool.count)")
+                print("[GameScene]   🍟 Fries in pool: \(Collectable.shared.friesPool.count)")
                 #endif
             } 
             // Regular coin patterns for other poles
@@ -757,12 +756,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     private func positionPoleSet(_ poleSet: SKNode, atX xPos: CGFloat) {
         #if DEBUG
-        print("📍 Positioning pole set - Initial xPos: \(xPos)")
+        print("[GameScene] 📍 Positioning pole set - Initial xPos: \(xPos)")
         #endif
         
-        let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
-        let minY = gap/2 + GameConfig.Metrics.poleSetVerticalMargin + GameConfig.Metrics.floorHeight
-        let maxY = frame.height - gap/2 - GameConfig.Metrics.poleSetVerticalMargin
+        let minY = GameConfig.Metrics.polePairMinY
+        let maxY = GameConfig.Metrics.polePairMaxY
         
         // Generate random Y position within safe bounds
         let yPos = CGFloat.random(in: minY...maxY)
@@ -771,7 +769,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         poleSet.zPosition = 1
         
         #if DEBUG
-        print("📍 Final pole position - x: \(xPos), y: \(yPos), minY: \(minY), maxY: \(maxY)")
+        print("[GameScene] 📍 Final pole position - x: \(xPos), y: \(yPos), minY: \(minY), maxY: \(maxY)")
         #endif
     }
 
@@ -925,6 +923,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Handle collisions only if collision is enabled
         if (otherBody.categoryBitMask == PhysicsCategory.pole || otherBody.categoryBitMask == PhysicsCategory.floor) 
             && isHeroCollisionEnabled {
+            #if DEBUG
+            print("[GameScene] Hero collision detected with \(otherBody.categoryBitMask)")
+            #endif
             gameOver(reason: .collision)
         } else if otherBody.categoryBitMask == PhysicsCategory.coin {
             if let coin = otherBody.node as? SKSpriteNode {
@@ -1002,10 +1003,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     private func getNextPolePosition() -> CGPoint {
-        let gap = GameConfig.scaled(GameConfig.Metrics.polePairGap)
-        let minY = gap/2 + GameConfig.Metrics.poleSetVerticalMargin + GameConfig.Metrics.floorHeight
-        let maxY = frame.height - gap/2 - GameConfig.Metrics.poleSetVerticalMargin
-        
+        let minY = GameConfig.Metrics.polePairMinY
+        let maxY = GameConfig.Metrics.polePairMaxY
+
         // Generate random Y position within safe bounds
         let yPos = CGFloat.random(in: minY...maxY)
         
@@ -1188,12 +1188,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         nextScene.scaleMode = .aspectFill
         view?.presentScene(nextScene, transition: SKTransition.fade(withDuration: 0.3))
+        #if DEBUG
+        print("{ Transition } from GameScene to GameOverScene")
+        #endif
     }
     
     // MARK: - Reset Game
     private func restartGame() {
         #if DEBUG
-        print("Restarting game...")
+        print("[GameScene] Restarting game...")
         #endif
         
         // Reset all game state
@@ -1249,7 +1252,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setupPools()  // This will spawn initial poles
         
         #if DEBUG
-        print("Game restarted")
+        print("[GameScene] Game restarted")
         #endif
     }
     
@@ -1318,12 +1321,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 
     private func updateHeroCollision() {
-
-        hero.physicsBody?.isDynamic = !isGamePaused
+        #if DEBUG
+        print("[GameScene] - updateHeroCollision() - Updating hero collision...")
+        #endif
+        hero.physicsBody?.isDynamic = true
         
         if let heroBody = hero.physicsBody {
             // Keep the hero's physics body dynamic and other properties unchanged
-            heroBody.isDynamic = true
             heroBody.allowsRotation = false
             heroBody.categoryBitMask = PhysicsCategory.hero
             
@@ -1343,9 +1347,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         #if DEBUG
-        print("Hero collision updated - isEnabled: \(isHeroCollisionEnabled)")
+        print("[GameScene] Hero collision updated - isEnabled: \(isHeroCollisionEnabled)")
         if let heroBody = hero.physicsBody {
-            print("Hero physics - collision: \(heroBody.collisionBitMask), contact: \(heroBody.contactTestBitMask)")
+            print("[GameScene] Hero physics - collision: \(heroBody.collisionBitMask), contact: \(heroBody.contactTestBitMask)")
         }
         #endif
     }
@@ -1355,97 +1359,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pauseManager.togglePause(isGamePaused: isGamePaused) { [weak self] in
             self?.updateHeroCollision()
         }
-    }
-    
-    private func createPauseUI() {
-        // Create a container node for all pause UI elements
-        let pauseContainer = SKNode()
-        pauseContainer.name = "pauseContainer"
-        pauseContainer.zPosition = 1000
-        
-        // Paused Label 
-        let pausedLabel = SKLabelNode(fontNamed: "Helvetica-Bold")
-        pausedLabel.text = "Paused"
-        pausedLabel.position = CGPoint(x: frame.midX, y: frame.maxY * 0.75)
-        pausedLabel.fontSize = 40
-        pausedLabel.fontColor = .white
-        pausedLabel.name = "pausedLabel"
-        pauseContainer.addChild(pausedLabel)
-        
-        // Resume Button
-        let resumeButton = SKLabelNode(fontNamed: "Helvetica")
-        resumeButton.text = "Resume"
-        resumeButton.position = CGPoint(x: frame.midX, y: frame.midY - 300)
-        resumeButton.fontSize = 30
-        resumeButton.fontColor = .green
-        resumeButton.name = "resumeButton"
-        pauseContainer.addChild(resumeButton)
-        
-        // Restart Button
-        let restartButton = SKLabelNode(fontNamed: "Helvetica")
-        restartButton.text = "Restart"
-        restartButton.position = CGPoint(x: frame.midX, y: frame.midY - 250)
-        restartButton.fontSize = 30
-        restartButton.fontColor = .yellow
-        restartButton.name = "restartButton"
-        pauseContainer.addChild(restartButton)
-        
-        // Gravity Toggle
-        let gravityToggle = SKLabelNode(text: "Toggle Gravity: \(isGravityEnabled ? "ON" : "OFF")")
-        gravityToggle.position = CGPoint(x: frame.midX, y: frame.midY - 100)
-        gravityToggle.name = "gravityToggle"
-        pauseContainer.addChild(gravityToggle)
-        
-        // Hero Collision Toggle
-        let heroCollisionToggle = SKLabelNode(text: "Toggle Hero Collision: \(isHeroCollisionEnabled ? "ON" : "OFF")")
-        heroCollisionToggle.position = CGPoint(x: frame.midX, y: frame.midY - 150)
-        heroCollisionToggle.name = "heroCollisionToggle"
-        pauseContainer.addChild(heroCollisionToggle)
-        
-        #if DEBUG
-        // Debug Information
-        let debugInfo = SKNode()
-        debugInfo.position = CGPoint(x: frame.midX, y: frame.midY + 100)
-        
-        // Hero Position
-        let heroYPos = SKLabelNode(text: "Hero Y: \(String(format: "%.2f", hero.position.y))")
-        heroYPos.fontSize = 20
-        heroYPos.position = CGPoint(x: 0, y: 0)
-        debugInfo.addChild(heroYPos)
-        
-        // Pole Pool Info
-        let polePoolCount = Pole.shared.polePool.count
-        let activePoleCount = poleNodes.count
-        let poleInfo = SKLabelNode(text: "Poles - Pool: \(polePoolCount), Active: \(activePoleCount)")
-        poleInfo.fontSize = 20
-        poleInfo.position = CGPoint(x: 0, y: -30)
-        debugInfo.addChild(poleInfo)
-
-        let poleCount = SKLabelNode(text: "Pole Count: \(poleSetCount)")
-        poleCount.fontSize = 20
-        poleCount.position = CGPoint(x: 0, y: -60)
-        debugInfo.addChild(poleCount)
-
-        // Collectible Pool Info
-        let coinPoolCount = Collectable.shared.coinPool.count
-        let activeCoinCount = Collectable.shared.activeCoins.count
-        let burgerPoolCount = Collectable.shared.burgerPool.count
-        let activeBurgerCount = Collectable.shared.activeBurgers.count
-        
-        let coinInfo = SKLabelNode(text: "Coins - Pool: \(coinPoolCount), Active: \(activeCoinCount)")
-        coinInfo.fontSize = 20
-        coinInfo.position = CGPoint(x: 0, y: -90)
-        debugInfo.addChild(coinInfo)
-        
-        let burgerInfo = SKLabelNode(text: "Burgers - Pool: \(burgerPoolCount), Active: \(activeBurgerCount)")
-        burgerInfo.fontSize = 20
-        burgerInfo.position = CGPoint(x: 0, y: -120)
-        debugInfo.addChild(burgerInfo)
-        
-        pauseContainer.addChild(debugInfo)
-        #endif
-        
-        addChild(pauseContainer)
     }
     
     private func cleanupScene() {
@@ -1471,7 +1384,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         updateStaminaBar()
         
         #if DEBUG
-        print("Scene cleaned up")
+        print("[GameScene] Scene cleaned up")
         #endif
     }
     

@@ -77,6 +77,9 @@ class GameOverScene: SKScene {
                 let nameEntryScene = NameEntryScene(size: self.size, score: mainScore, coins: coinScore, gameOverReason: gameOverReason)
                 nameEntryScene.scaleMode = .aspectFill
                 view.presentScene(nameEntryScene, transition: SKTransition.fade(withDuration: 0.3))
+                #if DEBUG
+                print("{ Transition } from GameOverScene to NameEntryScene")
+                #endif
                 return
             }
         }
@@ -91,10 +94,10 @@ class GameOverScene: SKScene {
         // Add faded game title
         let titleTexture = SKTexture(imageNamed: "flappymax_title_white")
         let titleNode = SKSpriteNode(texture: titleTexture)
-        titleNode.alpha = 0.1 // Faded appearance
+        titleNode.alpha = 0.1
         titleNode.setScale(GameConfig.Scales.titleFaded)
         titleNode.position = CGPoint(x: frame.midX, y: frame.midY)
-        titleNode.zPosition = -1 // Behind other elements
+        titleNode.zPosition = -1
         addChild(titleNode)
     }
     
@@ -166,7 +169,7 @@ class GameOverScene: SKScene {
                 rankLabel.text = "\(index + 1)."
                 rankLabel.fontSize = GameConfig.adaptiveFontSize(18)
                 rankLabel.horizontalAlignmentMode = .right
-                rankLabel.position = CGPoint(x: -spacing * 3.0, y: yPos)
+                rankLabel.position = CGPoint(x: -spacing * 3.6, y: yPos)
                 scoreEntry.addChild(rankLabel)
                 
                 // Name
@@ -174,7 +177,7 @@ class GameOverScene: SKScene {
                 nameLabel.text = name.count > 10 ? String(name.prefix(10)) + "..." : name
                 nameLabel.fontSize = GameConfig.adaptiveFontSize(18)
                 nameLabel.horizontalAlignmentMode = .left
-                nameLabel.position = CGPoint(x: -spacing * 2.8, y: yPos)
+                nameLabel.position = CGPoint(x: -spacing * 3.3, y: yPos)
                 scoreEntry.addChild(nameLabel)
                 
                 // Score with Coin Icon
@@ -239,20 +242,25 @@ class GameOverScene: SKScene {
             let gameScene = GameScene(size: self.size)
             gameScene.scaleMode = .aspectFill
             view?.presentScene(gameScene, transition: SKTransition.fade(withDuration: 0.3))
+            #if DEBUG
+            print("{ Transition } from GameOverScene to GameScene")
+            #endif
         } else if touchedNodes.contains(where: { $0.name == "menuButton" }) {
             let menuScene = MainMenuScene(size: self.size)
             menuScene.scaleMode = .aspectFill
             view?.presentScene(menuScene, transition: SKTransition.fade(withDuration: 0.3))
+            #if DEBUG
+            print("{ Transition } from GameOverScene to MainMenuScene")
+            #endif
         }
     }
     
     #if targetEnvironment(macCatalyst)
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         #if DEBUG
-        print("\n=== Keyboard Event in GameOverScene ===")
         for press in presses {
             if let key = press.key {
-                print("Key pressed: \(key.charactersIgnoringModifiers ?? "")")
+                print("[GameOverScene] - Key pressed: \(key.charactersIgnoringModifiers ?? "")")
             }
         }
         #endif
@@ -261,11 +269,14 @@ class GameOverScene: SKScene {
             if let key = press.key {
                 if key.charactersIgnoringModifiers == "\r" {  // Enter key
                     #if DEBUG
-                    print("Enter pressed, restarting game")
+                    print("[GameOverScene] - Enter pressed, restarting game")
                     #endif
                     let gameScene = GameScene(size: self.size)
                     gameScene.scaleMode = .aspectFill
                     view?.presentScene(gameScene, transition: SKTransition.fade(withDuration: 0.3))
+                    #if DEBUG
+                    print("{ Transition } from GameOverScene to GameScene")
+                    #endif
                     return
                 }
             }

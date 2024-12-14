@@ -56,6 +56,9 @@ class GameViewController: UIViewController {
             loadingScene = LoadingScene(size: view.bounds.size)
             loadingScene?.scaleMode = .aspectFill
             view.presentScene(loadingScene)
+            #if DEBUG
+            print("{ Transition } from GameViewController to LoadingScene")
+            #endif
             
             // Preload game assets in background
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -69,7 +72,7 @@ class GameViewController: UIViewController {
         let progress = CGFloat(assetsLoaded) / CGFloat(totalAssets)
         
         #if DEBUG
-        print("Loading progress: \(Int(progress * 100))%") // Debug loading progress
+        print("[GameViewController] Loading progress: \(Int(progress * 100))%") // Debug loading progress
         #endif
         
         DispatchQueue.main.async { [weak self] in
@@ -90,6 +93,9 @@ class GameViewController: UIViewController {
             let scene = MainMenuScene(size: view.bounds.size)
             scene.scaleMode = .aspectFill
             view.presentScene(scene, transition: .fade(withDuration: 0.3))
+            #if DEBUG
+            print("{ Transition } from LoadingScene to MainMenuScene")
+            #endif
             self?.loadingScene = nil
         }
     }

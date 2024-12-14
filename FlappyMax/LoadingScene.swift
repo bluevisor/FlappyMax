@@ -108,7 +108,7 @@ class LoadingScene: SKScene {
         updateProgress(to: 1.0)
         
         // Add a small delay before transitioning
-        let wait = SKAction.wait(forDuration: 0.2)
+        let wait = SKAction.wait(forDuration: 0.1)
         let fadeOut = SKAction.fadeOut(withDuration: 0.3)
         
         run(SKAction.sequence([wait, fadeOut]), completion: completion)

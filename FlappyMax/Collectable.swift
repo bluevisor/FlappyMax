@@ -77,18 +77,30 @@ class Collectable {
     
     // Helper methods to manage collected state
     func markAsCollected(_ node: SKSpriteNode) {
+        #if DEBUG
+        print("[Collectable] - markAsCollected() called for node: \(node)")
+        #endif
         objc_setAssociatedObject(node, collectedKey, true, .OBJC_ASSOCIATION_RETAIN)
     }
     
     func isCollected(_ node: SKSpriteNode) -> Bool {
+        #if DEBUG
+        print("[Collectable] - isCollected() called for node: \(node)")
+        #endif
         return (objc_getAssociatedObject(node, collectedKey) as? Bool) ?? false
     }
     
     func resetCollectedState(_ node: SKSpriteNode) {
+        #if DEBUG
+        print("[Collectable] - resetCollectedState() called for node: \(node)")
+        #endif
         objc_setAssociatedObject(node, collectedKey, nil, .OBJC_ASSOCIATION_RETAIN)
     }
     
     func initializeCollectiblePool(coinCount: Int = 30, burgerCount: Int = 5, pizzaCount: Int = 5, sushiCount: Int = 5, friesCount: Int = 5) {
+        #if DEBUG
+        print("[Collectable] - initializeCollectiblePool() called with counts: coin: \(coinCount), burger: \(burgerCount), pizza: \(pizzaCount), sushi: \(sushiCount), fries: \(friesCount)")
+        #endif
         // Initialize coin pool
         for _ in 0..<coinCount {
             let coinAtlas = SKTextureAtlas(named: "coin")
@@ -133,7 +145,7 @@ class Collectable {
     
     func createCollectible(type: CollectibleType) -> SKSpriteNode {
         #if DEBUG
-        print("  Creating collectible of type: \(type)")
+        print("[Collectable] - createCollectible() called with type: \(type)")
         #endif
         let collectible: SKSpriteNode
         switch type {
@@ -156,7 +168,7 @@ class Collectable {
             } else {
                 let texture = SKTexture(imageNamed: "burger")
                 #if DEBUG
-                print("🍔 Creating burger with texture: \(texture.description)")
+                print("[Collectable] - 🍔 Creating burger with texture: \(texture.description)")
                 #endif
                 collectible = createCollectable(texture: texture, physicsCategory: PhysicsCategory.burger)
                 activeBurgers.append(collectible)
@@ -169,11 +181,11 @@ class Collectable {
             } else {
                 let texture = SKTexture(imageNamed: "pizza")
                 #if DEBUG
-                print("🍕 Creating pizza - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
+                print("[Collectable] - 🍕 Creating pizza - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
                 #endif
                 if texture.size().width == 0 {
                     #if DEBUG
-                    print("⚠️ Failed to load pizza texture!")
+                    print("[Collectable] - ⚠️ Failed to load pizza texture!")
                     #endif
                     // Fallback to burger texture for debugging
                     let fallbackTexture = SKTexture(imageNamed: "burger")
@@ -191,11 +203,11 @@ class Collectable {
             } else {
                 let texture = SKTexture(imageNamed: "sushi")
                 #if DEBUG
-                print("🍣 Creating sushi - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
+                print("[Collectable] - 🍣 Creating sushi - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
                 #endif
                 if texture.size().width == 0 {
                     #if DEBUG
-                    print("⚠️ Failed to load sushi texture!")
+                    print("[Collectable] - ⚠️ Failed to load sushi texture!")
                     #endif
                     // Fallback to burger texture for debugging
                     let fallbackTexture = SKTexture(imageNamed: "burger")
@@ -213,11 +225,11 @@ class Collectable {
             } else {
                 let texture = SKTexture(imageNamed: "fries")
                 #if DEBUG
-                print("🍟 Creating fries - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
+                print("[Collectable] - 🍟 Creating fries - Texture exists: \(texture.size().width > 0), Size: \(texture.size())")
                 #endif
                 if texture.size().width == 0 {
                     #if DEBUG
-                    print("⚠️ Failed to load fries texture!")
+                    print("[Collectable] - ⚠️ Failed to load fries texture!")
                     #endif
                     // Fallback to burger texture for debugging
                     let fallbackTexture = SKTexture(imageNamed: "burger")
@@ -232,6 +244,9 @@ class Collectable {
     }
     
     func recycleCollectible(_ collectible: SKSpriteNode) {
+        #if DEBUG
+        print("[Collectable] - recycleCollectible() called with collectible: \(collectible)")
+        #endif
         collectible.removeFromParent()
         resetCollectedState(collectible)
         
@@ -281,12 +296,13 @@ class Collectable {
         if collectible.name == "coin" {
             // Restart coin animation
             setupCoinAnimation(for: collectible)
-            // Restart coin animation
-            setupCoinAnimation(for: collectible)
         }
     }
 
     private func createCollectable(texture: SKTexture, physicsCategory: UInt32) -> SKSpriteNode {
+        #if DEBUG
+        print("[Collectable] - createCollectable() called with texture: \(texture), physicsCategory: \(physicsCategory)")
+        #endif
         let sprite = SKSpriteNode(texture: texture)
         
         // Set size based on type
@@ -327,10 +343,11 @@ class Collectable {
     }
     
     private func setupCoinAnimation(for coin: SKSpriteNode) {
+        #if DEBUG
+        print("[Collectable] - setupCoinAnimation() called for coin: \(coin)")
+        #endif
         let coinAtlas = SKTextureAtlas(named: "coin")
         var frames: [SKTexture] = []
-        
-        // Load all frames from the coin atlas
         
         // Load all frames from the coin atlas
         for i in 1...15 {

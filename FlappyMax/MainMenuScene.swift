@@ -44,7 +44,7 @@ class MainMenuScene: SKScene {
     override func didMove(to view: SKView) {
         #if DEBUG
         if !MainMenuScene.hasLoggedDeviceConfig {
-            print("\n======== Device Configuration ========")
+            print("\n============ MainMenuScene : Device Configuration ============")
             print("- Current Device: \(DeviceType.current)")
             print("- Screen Size: \(UIScreen.main.bounds.size)")
             print("- Scale Factor: \(GameConfig.deviceScaleFactor)")
@@ -58,7 +58,7 @@ class MainMenuScene: SKScene {
             }
             
             print("- Safe Area Insets: \(safeAreaInsets)")
-            print("=========================================\n")
+            print("==============================================================\n")
             MainMenuScene.hasLoggedDeviceConfig = true
         }
         #endif
@@ -192,6 +192,9 @@ class MainMenuScene: SKScene {
     }
 
     private func preloadAudio() {
+        #if DEBUG
+        print("[MainMenuScene] - preloadAudio() is loading : swoosh.m4a")
+        #endif
         if let swooshSoundURL = Bundle.main.url(forResource: "swoosh", withExtension: "m4a") {
             swooshSoundEffect = try? AVAudioPlayer(contentsOf: swooshSoundURL)
             swooshSoundEffect?.prepareToPlay()
@@ -199,18 +202,30 @@ class MainMenuScene: SKScene {
     }
     
     @objc private func startButtonTapped() {
+        #if DEBUG
+        print("[MainMenuScene] - startButtonTapped()")
+        #endif
         if let view = self.view {
             let gameScene = GameScene(size: view.bounds.size)
             gameScene.scaleMode = .aspectFill
             view.presentScene(gameScene, transition: SKTransition.fade(withDuration: 0.3))
+            #if DEBUG
+            print("{ Transition } from MainMenuScene to GameScene")
+            #endif
         }
     }
     
     @objc private func settingsButtonTapped() {
+        #if DEBUG
+        print("[MainMenuScene] - settingsButtonTapped()")
+        #endif
         if let view = self.view {
             let settingsScene = SettingsScene(size: view.bounds.size)
             settingsScene.scaleMode = .aspectFill
             view.presentScene(settingsScene, transition: SKTransition.fade(withDuration: 0.3))
+            #if DEBUG
+            print("{ Transition } from MainMenuScene to SettingsScene")
+            #endif
         }
     }
     
@@ -233,6 +248,10 @@ class MainMenuScene: SKScene {
             return SKTexture()
         }
         
+        #if DEBUG
+        print("[MainMenuScene] - createGradientTexture() - startColor: \(startColor) - endColor: \(endColor)")
+        #endif
+
         let colors = [startColor.cgColor, endColor.cgColor] as CFArray
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let colorLocations: [CGFloat] = [1.0, 0.0]

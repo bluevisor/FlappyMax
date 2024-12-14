@@ -174,6 +174,9 @@ class NameEntryScene: SKScene {
         
         // Present the game over scene
         view?.presentScene(gameOverScene, transition: SKTransition.fade(withDuration: 0.3))
+        #if DEBUG
+        print("{ Transition } from NameEntryScene to GameOverScene")
+        #endif
     }
 }
 
@@ -184,7 +187,7 @@ extension NameEntryScene: UITextFieldDelegate {
         
         let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
         #if DEBUG
-        print("NameEntryScene: Name entered: \(name)")
+        print("[NameEntryScene] - Name entered: \(name)")
         #endif
         
         GameScene.playSound("click") // Play click sound when submitting
@@ -194,7 +197,7 @@ extension NameEntryScene: UITextFieldDelegate {
         textField.resignFirstResponder()
         textField.removeFromSuperview()
         #if DEBUG
-        print("NameEntryScene: Removed text field")
+        print("[NameEntryScene] - Removed text field")
         #endif
         
         return true

@@ -82,9 +82,9 @@ class SettingsScene: SKScene {
         highScoresButton.name = "highScoresButton"
         contentNode.addChild(highScoresButton)
         
-        // Clear Scoreboard button
+        // Reset Scoreboard button
         let resetButton = SKLabelNode(fontNamed: "Helvetica")
-        resetButton.text = "Clear Scoreboard"
+        resetButton.text = "Reset Scoreboard"
         resetButton.fontSize = GameConfig.adaptiveFontSize(20)
         resetButton.position = CGPoint(x: 0, y: -spacing * 2)
         resetButton.name = "resetButton"
@@ -179,15 +179,27 @@ class SettingsScene: SKScene {
             feedback.run(sequence)
             
         } else if nodesAtLocation.contains(where: { $0.name == "backButton" }) {
+            #if DEBUG
+            print("[SettingsScene] Back button tapped")
+            #endif
             volumeSlider?.removeFromSuperview()
             let menuScene = MainMenuScene(size: self.size)
             menuScene.scaleMode = .aspectFill
             view?.presentScene(menuScene, transition: SKTransition.fade(withDuration: 0.3))
+            #if DEBUG
+            print("{ Transition } from SettingsScene to MainMenuScene")
+            #endif
         } else if nodesAtLocation.contains(where: { $0.name == "highScoresButton" }) {
+            #if DEBUG
+            print("[SettingsScene] High Scores button tapped")
+            #endif
             volumeSlider?.removeFromSuperview()
             let highScoresScene = HighScoresScene(size: self.size)
             highScoresScene.scaleMode = .aspectFill
             view?.presentScene(highScoresScene, transition: SKTransition.fade(withDuration: 0.3))
+            #if DEBUG
+            print("{ Transition } from SettingsScene to HighScoresScene")
+            #endif
         }
     }
     
